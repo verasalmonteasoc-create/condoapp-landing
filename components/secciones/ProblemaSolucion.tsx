@@ -34,7 +34,7 @@ export function ProblemaSolucion() {
 
         <div className="mt-10 grid gap-6 lg:grid-cols-2 lg:gap-8">
           <div className="rounded-tarjeta border border-neutro-200 bg-neutro-50 p-6 dark:border-noche-700 dark:bg-noche-900 sm:p-8">
-            <p className="text-[12px] font-bold uppercase tracking-[0.08em] text-neutro-500 dark:text-noche-400">
+            <p className="text-[12px] font-bold uppercase tracking-[0.08em] text-neutro-600 dark:text-noche-400">
               Antes
             </p>
             <ul className="mt-4 flex flex-col gap-3.5">

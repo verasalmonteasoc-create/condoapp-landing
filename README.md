@@ -19,6 +19,19 @@ npm run build         # export estático -> out/
 npm run lint
 ```
 
+## Integración continua
+
+`.github/workflows/pruebas.yml` corre en cada push y cada PR: secretos,
+tipos, lint, pruebas unitarias, build de producción y el E2E completo con
+Playwright contra `wrangler pages dev` -la Function real, no un doble de
+prueba-. No despliega nada: eso lo hace Cloudflare Pages solo, ver "Cómo se
+despliega" abajo. Para correr lo mismo en local antes de un push:
+
+```bash
+npm run tipos && npm run lint && npm run pruebas && npm run build
+npm run build:e2e && npm run pruebas:e2e   # requiere .dev.vars -ver .dev.vars.example
+```
+
 ## Antes de publicar
 
 Estas nueve cosas están señaladas en el código con un comentario

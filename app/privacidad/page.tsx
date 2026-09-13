@@ -22,7 +22,7 @@ export default function Privacidad() {
       <h1 className="mt-8 text-[28px] font-black tracking-[-0.02em] text-neutro-900 dark:text-noche-100">
         Política de privacidad
       </h1>
-      <p className="mt-2 text-[13.5px] text-neutro-500 dark:text-noche-400">
+      <p className="mt-2 text-[13.5px] text-neutro-600 dark:text-noche-400">
         Borrador -- pendiente de revisión legal.
       </p>
 

@@ -6,8 +6,20 @@ out/
 *.tsbuildinfo
 .env
 .env.local
+.dev.vars
 .DS_Store
 coverage/
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+
+# Salida de correr Lighthouse a mano contra el build local -no un reporte
+# fijo del sitio, cambia con cada corrida y con la máquina donde se mide.
+lighthouse-report.json
+lighthouse-fallos.txt
 
 # `next dev` (16+) los regenera solo, con un aviso generico de Next -- no
 # instrucciones de este proyecto. No se confirman: este repo ya usa README.md

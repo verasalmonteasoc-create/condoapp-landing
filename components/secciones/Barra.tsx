@@ -14,7 +14,7 @@ export function Barra() {
   return (
     <header className="sticky top-0 z-40 border-b border-neutro-200 bg-white/97 backdrop-blur dark:border-noche-700 dark:bg-noche-950/97">
       <div className="mx-auto flex h-[68px] w-[min(100%-32px,1160px)] items-center gap-4">
-        <a href="#inicio" className="inline-flex items-center gap-2.5" aria-label="CondoApp, inicio">
+        <a href="#inicio" className="inline-flex items-center gap-2.5">
           {/* El toggle de visibilidad va en un span propio, no en el className
               de Marca. Marca ya trae "inline-flex" fijo en su propia raíz
               (para no depender de que cada sitio se lo pase), y Tailwind v4
@@ -28,8 +28,18 @@ export function Barra() {
           <span className="hidden sm:inline-flex">
             <Marca />
           </span>
+          {/* Sin aria-label en el <a>: en escritorio, Marca ya deja "CondoApp"
+              y su descriptor como texto visible, y ese texto es su propio
+              nombre accesible -uno puesto a mano aquí arriba, por ejemplo
+              "CondoApp, inicio", no lo repite entero y un lector de pantalla
+              anuncia una cosa distinta de lo que muestra la pantalla, que es
+              exactamente el "label-content-name-mismatch" que marcó Lighthouse.
+              En móvil, en cambio, solo se ve el ícono (soloSimbolo, marcado
+              aria-hidden): sin texto visible que sirva de nombre, hace falta
+              este span oculto para que el enlace no quede sin nombre. */}
           <span className="sm:hidden">
             <Marca soloSimbolo />
+            <span className="sr-only">CondoApp, inicio</span>
           </span>
         </a>
         <a

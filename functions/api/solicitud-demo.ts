@@ -49,6 +49,16 @@ type Env = {
   AIRTABLE_API_KEY: string;
   TURNSTILE_SECRET_KEY: string;
   LIMITADOR: EspacioClaveValor;
+  /**
+   * Solo existe en `.dev.vars` (ver .dev.vars.example), NUNCA en las
+   * variables de entorno reales de Cloudflare Pages -no está documentado en
+   * ningún lugar donde se configure producción-. Con esto puesto, el paso 6
+   * no llama a Airtable de verdad: lo usa la prueba E2E de Playwright, que
+   * corre contra la Function real (origen, señuelo, límite de envíos y
+   * Turnstile se verifican de verdad) pero no puede -ni debe- escribirle a
+   * una base de Airtable real en cada corrida de CI.
+   */
+  MODO_PRUEBA?: string;
 };
 
 /**
@@ -235,6 +245,8 @@ export const onRequestPost: FuncionPagina<Env> = async (contexto) => {
   }
 
   // 6. Airtable.
+  if (env.MODO_PRUEBA) return json({ ok: true }, 201);
+
   const { AIRTABLE_BASE_ID, AIRTABLE_TABLE_NAME, AIRTABLE_API_KEY } = env;
   if (!AIRTABLE_BASE_ID || !AIRTABLE_TABLE_NAME || !AIRTABLE_API_KEY) {
     return json({ error: "El formulario no está configurado todavía." }, 503);

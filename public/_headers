@@ -28,6 +28,23 @@
   Permissions-Policy: geolocation=(), camera=(), microphone=(), payment=(), usb=()
   Cross-Origin-Opener-Policy: same-origin
 
+# CACHÉ LARGA SOLO PARA LO QUE TRAE HASH EN EL NOMBRE
+# ----------------------------------------------------
+# Cloudflare Pages combina cabeceras de bloques distintos que coincidan con
+# la misma ruta: esto NO reemplaza el bloque de seguridad de arriba, se suma
+# a él -la ruta de más abajo es más específica que "/*", así que para estos
+# archivos gana su propio Cache-Control mientras conserva la misma CSP y el
+# resto de cabeceras de seguridad-. Todo lo que Next deja bajo "_next/static/"
+# lleva el hash del contenido en el propio nombre de archivo (Next lo genera
+# así, no algo que este sitio decida): si el contenido cambia, el nombre
+# cambia con él, así que "para siempre" es seguro -un cambio de verdad nunca
+# reutiliza una URL vieja para servir algo distinto-. El HTML de cada página
+# ("/", "/privacidad", ...) se queda fuera a propósito: ESE sí puede cambiar
+# de contenido sin cambiar de URL, y cachearlo igual de agresivo dejaría a
+# alguien viendo una versión vieja del sitio hasta que limpie caché a mano.
+/_next/static/*
+  Cache-Control: public, max-age=31536000, immutable
+
 # =============================================================================
 # NOTAS QUE NO CABEN EN UN COMENTARIO CORTO
 # =============================================================================

@@ -54,7 +54,7 @@ export function Marca({ variante = "oscuro", soloSimbolo = false, className = ""
           </span>
           <span
             className={`mt-1 text-[10px] font-bold uppercase tracking-[0.13em] ${
-              claro ? "text-marca-200" : "text-neutro-500 dark:text-noche-400"
+              claro ? "text-marca-200" : "text-neutro-600 dark:text-noche-400"
             }`}
           >
             {SITIO.descriptor}

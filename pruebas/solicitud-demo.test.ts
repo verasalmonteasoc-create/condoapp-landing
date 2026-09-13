@@ -273,4 +273,28 @@ describe("onRequestPost /api/solicitud-demo", () => {
     expect(res.status).toBe(503);
     expect(fetch).not.toHaveBeenCalled();
   });
+
+  describe("MODO_PRUEBA", () => {
+    it("con MODO_PRUEBA, responde éxito sin llamar a Airtable -solo a Turnstile-", async () => {
+      const espia = mockFetchExitoso();
+      vi.stubGlobal("fetch", espia);
+      const res = await onRequestPost({
+        request: crearPeticion(SOLICITUD_VALIDA, { ip: "190.0.0.60" }),
+        env: { ...crearEnv(), MODO_PRUEBA: "1" },
+      });
+      expect(res.status).toBe(201);
+      expect(espia).toHaveBeenCalledTimes(1); // Solo Turnstile.
+      expect(String(espia.mock.calls[0]![0])).toContain("challenges.cloudflare.com");
+    });
+
+    it("sin MODO_PRUEBA, sí llega a llamar a Airtable -no quede prendido por accidente-", async () => {
+      const espia = mockFetchExitoso();
+      vi.stubGlobal("fetch", espia);
+      await onRequestPost({
+        request: crearPeticion(SOLICITUD_VALIDA, { ip: "190.0.0.61" }),
+        env: crearEnv(),
+      });
+      expect(espia).toHaveBeenCalledTimes(2); // Turnstile y Airtable.
+    });
+  });
 });

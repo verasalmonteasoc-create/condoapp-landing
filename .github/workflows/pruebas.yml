@@ -1,0 +1,172 @@
+# =============================================================================
+# Integración continua.
+#
+# QUÉ CUBRE Y QUÉ NO
+# -------------------
+# Tipos, lint, pruebas unitarias, build de producción y el E2E completo
+# contra la Function real (Playwright + `wrangler pages dev`, sin cuenta ni
+# credenciales de Cloudflare -ver playwright.config.ts). Lo que NO hace este
+# flujo es desplegar: Cloudflare Pages ya construye y publica solo en cada
+# push a `main` en cuanto el repositorio quede conectado en su panel -ver
+# "Cómo se despliega" en README.md-. Duplicar ese paso aquí con
+# `wrangler pages deploy` obligaría a mantener un token de Cloudflare en dos
+# lugares a la vez y arriesgaría un despliegue a mitad de otro.
+# =============================================================================
+name: Pruebas
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# Un push nuevo cancela la corrida anterior de la misma rama: gastar minutos
+# validando un commit que ya fue reemplazado no le sirve a nadie.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Lo primero y lo más barato: que no se haya colado un secreto. Falla en
+  # segundos y sin instalar nada. Un secreto en el historial de git no se
+  # arregla borrando el archivo en el commit siguiente: hay que rotarlo,
+  # porque ya quedó público.
+  # ---------------------------------------------------------------------------
+  guardias:
+    name: Guardias rápidas (secretos)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: .env y .dev.vars no están versionados
+        run: |
+          fallos=0
+          for archivo in .env .env.local .dev.vars; do
+            if git ls-files --error-unmatch "$archivo" >/dev/null 2>&1; then
+              echo "::error::$archivo está versionado. Rótalo: ya es público."
+              fallos=1
+            fi
+          done
+          exit $fallos
+
+      - name: Ningún archivo rastreado trae una credencial con valor
+        run: |
+          # Se busca la ASIGNACIÓN con valor, no la palabra: los ".example"
+          # tienen que seguir pasando con sus marcadores "clave-de-prueba" y
+          # con la clave secreta de PRUEBA de Turnstile que Cloudflare
+          # documenta -no es un secreto de nadie, siempre pasa a propósito-.
+          patron='(SECRET|API_KEY|TOKEN)\s*=\s*["'"'"']?[A-Za-z0-9_/+-]{16,}'
+          if git grep -nEI "$patron" -- . \
+               ':!*.example' ':!*.md' ':!.github/workflows/*' \
+             | grep -vE 'CAMBIA_ESTO|process\.env|clave-de-prueba|1x0{20,}AA'; then
+            echo "::error::Parece haber una credencial escrita en el código."
+            exit 1
+          fi
+          echo "ok - ninguna credencial literal en archivos rastreados."
+
+      - name: Ninguna llave privada versionada
+        run: |
+          if git grep -lE 'BEGIN (RSA |EC |OPENSSH |PGP |DSA )?PRIVATE KEY' -- . ':!*.md'; then
+            echo "::error::Hay una llave privada en un archivo versionado (arriba)."
+            echo "Sacala del repositorio Y ROTALA: si estuvo en un commit, ya es publica."
+            exit 1
+          fi
+          echo "ok - ninguna llave privada versionada."
+
+  # ---------------------------------------------------------------------------
+  # Tipos, lint, pruebas unitarias y el build de producción. Sin Docker ni
+  # servicios que levantar, así que da veredicto en un par de minutos.
+  # ---------------------------------------------------------------------------
+  frontend:
+    name: Tipos, lint, pruebas y build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      # `npm ci`, no `npm install`: instala EXACTAMENTE el lockfile. Con
+      # `install`, CI podría validar unas versiones y el desarrollo otras,
+      # que es la forma más cara de que "en mi máquina funciona".
+      - run: npm ci
+
+      - name: Tipos
+        run: npm run tipos
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Pruebas unitarias
+        run: npm run pruebas
+
+      # Todas las NEXT_PUBLIC_* quedan sin definir a propósito: cada una ya
+      # tiene su valor de respaldo en contenido/sitio.ts (ver .env.example),
+      # así que el build tiene que pasar igual sin ninguna clave real -es
+      # justo lo que hace posible que este chequeo corra en un repositorio
+      # público sin secretos.
+      - name: Build de producción
+        run: npm run build
+
+  # ---------------------------------------------------------------------------
+  # E2E contra el sitio COMPLETO: el export estático servido por el mismo
+  # motor que usa Cloudflare Pages (`wrangler pages dev`), con KV emulado en
+  # memoria y las claves de PRUEBA de Turnstile que documenta Cloudflare -
+  # nunca una cuenta ni credenciales reales. Ver playwright.config.ts y
+  # .dev.vars.example para el porqué de cada valor de abajo.
+  # ---------------------------------------------------------------------------
+  e2e:
+    name: E2E (Playwright + wrangler pages dev)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - run: npm ci
+
+      - name: Instalar el navegador de Playwright
+        run: npx playwright install --with-deps chromium
+
+      # No es un secreto de GitHub: son los mismos valores versionados en
+      # .dev.vars.example, copiados aquí porque ese archivo es una plantilla
+      # para desarrollo local (Wrangler solo lee ".dev.vars", nunca
+      # ".dev.vars.example") y no se renombra solo en CI.
+      - name: Variables para la Function local
+        run: |
+          cat > .dev.vars <<'EOF'
+          TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA
+          MODO_PRUEBA=1
+          AIRTABLE_BASE_ID=appDePrueba
+          AIRTABLE_TABLE_NAME=Solicitudes
+          AIRTABLE_API_KEY=clave-de-prueba
+          NEXT_PUBLIC_SITE_URL=http://127.0.0.1:8788
+          EOF
+
+      # Build con la sitekey de prueba de Turnstile: sin esto el formulario
+      # se queda en "verificación pendiente de configurar" y la prueba nunca
+      # ve el widget real. Mismo comando que en local -ver package.json.
+      - name: Build para E2E
+        run: npm run build:e2e
+
+      - name: Pruebas E2E
+        run: npm run pruebas:e2e
+
+      # El reporter ya cambia solo a "github" con CI=true (playwright.config.ts),
+      # así que un fallo anota la línea exacta del .spec en el propio PR. Esto
+      # es además: la traza y las capturas de pantalla del intento que falló.
+      - name: Reporte de Playwright (solo si algo falló)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
