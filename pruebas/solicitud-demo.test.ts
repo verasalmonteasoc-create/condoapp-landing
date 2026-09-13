@@ -100,6 +100,52 @@ describe("onRequestPost /api/solicitud-demo", () => {
     expect(cuerpoEnviado.fields.IP).toBe("190.0.0.42");
   });
 
+  describe("utm", () => {
+    it("reenvía los utm a Airtable", async () => {
+      const espia = mockFetchExitoso();
+      vi.stubGlobal("fetch", espia);
+      await onRequestPost({
+        request: crearPeticion(
+          { ...SOLICITUD_VALIDA, utm_source: "google", utm_medium: "cpc", utm_campaign: "lanzamiento" },
+          { ip: "190.0.0.43" },
+        ),
+        env: crearEnv(),
+      });
+      const [, llamadaAirtable] = espia.mock.calls;
+      const cuerpoEnviado = JSON.parse(String(llamadaAirtable![1]?.body));
+      expect(cuerpoEnviado.fields.utm_source).toBe("google");
+      expect(cuerpoEnviado.fields.utm_medium).toBe("cpc");
+      expect(cuerpoEnviado.fields.utm_campaign).toBe("lanzamiento");
+    });
+
+    it("sin utm en la solicitud, manda null y no undefined -- Airtable exige un valor serializable", async () => {
+      const espia = mockFetchExitoso();
+      vi.stubGlobal("fetch", espia);
+      await onRequestPost({
+        request: crearPeticion(SOLICITUD_VALIDA, { ip: "190.0.0.44" }),
+        env: crearEnv(),
+      });
+      const [, llamadaAirtable] = espia.mock.calls;
+      const cuerpoEnviado = JSON.parse(String(llamadaAirtable![1]?.body));
+      expect(cuerpoEnviado.fields.utm_source).toBeNull();
+    });
+
+    it("recorta un utm_campaign fabricado a mano antes de guardarlo", async () => {
+      const espia = mockFetchExitoso();
+      vi.stubGlobal("fetch", espia);
+      await onRequestPost({
+        request: crearPeticion(
+          { ...SOLICITUD_VALIDA, utm_campaign: "x".repeat(5000) },
+          { ip: "190.0.0.45" },
+        ),
+        env: crearEnv(),
+      });
+      const [, llamadaAirtable] = espia.mock.calls;
+      const cuerpoEnviado = JSON.parse(String(llamadaAirtable![1]?.body));
+      expect(cuerpoEnviado.fields.utm_campaign).toHaveLength(100);
+    });
+  });
+
   describe("origen", () => {
     it("rechaza una petición sin cabecera Origin, sin llamar a nada más", async () => {
       const res = await onRequestPost({

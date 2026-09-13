@@ -1,8 +1,14 @@
+"use client";
+
 import { Marca } from "@/components/marca/Marca";
+import { rastrearClicDemo } from "@/lib/analitica";
 
 /**
  * Barra superior. Fija arriba a propósito: en una página larga, el botón de
  * demo tiene que estar siempre a un toque, no solo al final.
+ *
+ * "use client" desde que el botón registra el clic -antes no hacía falta,
+ * era puro marcado sin ningún manejador-.
  */
 export function Barra() {
   return (
@@ -28,6 +34,7 @@ export function Barra() {
         </a>
         <a
           href="#demo"
+          onClick={() => rastrearClicDemo("barra")}
           className="btn btn-accion btn-sm ml-auto"
         >
           Solicita una demo

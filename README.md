@@ -21,7 +21,7 @@ npm run lint
 
 ## Antes de publicar
 
-Estas siete cosas están señaladas en el código con un comentario
+Estas nueve cosas están señaladas en el código con un comentario
 `PENDIENTE` -- `grep -rn PENDIENTE .` las encuentra todas:
 
 1. **`contenido/sitio.ts` -> `whatsapp`.** Vacío. Mientras lo esté, los
@@ -42,6 +42,9 @@ Estas siete cosas están señaladas en el código con un comentario
    | `Apartamentos` | Número | Vacío (`null`) si no se escribió |
    | `Recibido en` | Fecha, con hora | ISO 8601, en UTC |
    | `IP` | Texto de una línea | La IP del remitente -registro de auditoría, ver "Seguridad" abajo- |
+   | `utm_source` | Texto de una línea | De qué anuncio vino, o vacío -ver "Analítica y campañas" abajo- |
+   | `utm_medium` | Texto de una línea | Ídem |
+   | `utm_campaign` | Texto de una línea | Ídem |
 
    Un nombre de columna que no coincida no rompe el sitio -Airtable
    simplemente rechaza la fila con un error que la Function convierte en
@@ -74,16 +77,24 @@ Estas siete cosas están señaladas en el código con un comentario
    `AIRTABLE_TABLE_NAME`.
 6. **`app/privacidad/page.tsx`.** Ya cita la Ley 172-13 con precisión -los
    cuatro derechos ARCO, verificados por búsqueda antes de escribirlos-,
-   dice con qué proveedor externo se comparte el dato (Airtable, con sede
-   fuera de RD) y ya menciona la IP que se guarda como auditoría. Sigue
-   siendo un borrador: falta que alguien con criterio legal en RD lo revise,
-   y en particular que identifique ante quién se ejercen esos derechos en
-   la práctica -la ley no crea una autoridad de protección de datos de
-   propósito general, y este borrador no inventa una.
+   dice con qué proveedores externos se comparte el dato (Airtable, Google
+   Analytics y Meta, todos con sede fuera de RD) y ya menciona la IP y los
+   UTM que se guardan. Sigue siendo un borrador: falta que alguien con
+   criterio legal en RD lo revise, y en particular que identifique ante
+   quién se ejercen esos derechos en la práctica -la ley no crea una
+   autoridad de protección de datos de propósito general, y este borrador
+   no inventa una.
 7. **Sin sección de testimonios.** El único testimonio que se propuso para
    esta portada no era de un cliente real, así que no se publicó ninguno.
    Cuando exista uno de verdad, se agrega un componente `PruebaSocial.tsx`
    entre `ComoFunciona` y `Preguntas`.
+8. **`contenido/sitio.ts` -> `gaId`.** El ID de medición de GA4
+   ("G-XXXXXXXXXX", en GA4 -> Administrar -> Flujos de datos). No es
+   secreto. Mientras esté vacío, `lib/analitica.ts` no carga nada de
+   Google, ni siquiera con el consentimiento aceptado.
+9. **`contenido/sitio.ts` -> `metaPixelId`.** El ID del píxel (Events
+   Manager -> el píxel -> Configuración). Tampoco es secreto. Mismo
+   comportamiento que el de arriba mientras esté vacío.
 
 ## Cómo se despliega (Cloudflare Pages)
 
@@ -124,7 +135,7 @@ contra una plantilla genérica. Estado de cada punto:
 | Honeypot / captcha | Los dos: señuelo fuera de pantalla + Turnstile verificado en el servidor |
 | CSRF | No aplica en el sentido clásico -no hay cookie de sesión que un tercero pueda montar-; el equivalente real (que nadie más pueda disparar este formulario) se cierra comprobando `Origin` |
 | Sin secretos en texto plano | Ya regía (`env`, no hardcodeado); verificado que sigue así |
-| Ley 172-13 / consentimiento | `app/privacidad/page.tsx`, ampliada con la IP que ahora se guarda |
+| Ley 172-13 / consentimiento | `app/privacidad/page.tsx`, ampliada con la IP, los UTM, y Google/Meta como terceros -ver "Analítica y campañas" abajo- |
 | Secretos en variables de entorno | Ya regía; sin cambios |
 | Auditoría básica | Ya guardaba quién y cuándo; se agregó la IP |
 | Dependencias sin vulnerabilidades conocidas | `npm audit`: 0 en las cuatro severidades, verificado al escribir esto |
@@ -171,6 +182,98 @@ comprobación de que un origen ajeno, un señuelo relleno o un límite ya
 alcanzado NUNCA llegan a gastar una verificación de Turnstile ni una fila
 de Airtable -se verificó desactivando cada comprobación a mano y
 confirmando que la prueba correspondiente sí falla-.
+
+## Analítica y campañas
+
+### El consentimiento no es "opcional pero recomendado" aquí
+
+Se pidió así, y en general es una decisión razonable de dejarle a quien
+decide. Pero en este repositorio específico ya no era una opción libre: la
+sección "Qué guardamos" de `app/privacidad/page.tsx` decía, antes de esto,
+*"Nada más: no pedimos ni guardamos ningún otro dato"*. Cargar Google
+Analytics y Meta Pixel sin preguntar habría hecho esa frase falsa el mismo
+día del despliegue -los dos ponen cookies propias y mandan datos de
+navegación a Google y a Meta sin que la persona lo supiera nunca-. Por eso
+`components/ConsentimientoCookies.tsx` no es un banner decorativo: ninguno
+de los dos scripts se inyecta en el DOM (`lib/analitica.ts`) hasta que se
+guarda "aceptado". Rechazar, o no responder, dejan el sitio funcionando
+igual -incluido el formulario-, simplemente sin esos dos scripts.
+
+### Qué se rastrea, y con qué nombre
+
+| Evento | Cuándo | Nombre en GA4 | Nombre en Meta |
+|---|---|---|---|
+| Clic en "Solicita una demo" | Los dos botones (barra fija y hero) | `click_solicitar_demo` | `ClicSolicitarDemo` |
+| Scroll a la mitad de la portada | Una vez por visita, solo en `/` | `scroll_50` | `Scroll50` |
+| Formulario enviado con éxito | Al llegar a `/gracias` -no antes- | `generate_lead` | `Lead` |
+
+`generate_lead` y `Lead` son los nombres ESTÁNDAR de cada plataforma, no
+inventados: es lo que deja que Google Ads o Meta Ads reconozcan la
+conversión sin tener que enlazar un evento personalizado a mano en cada
+cuenta. Ninguno de los tres eventos manda nombre, WhatsApp ni ningún otro
+dato personal como parámetro -lo único que viaja es de qué campaña vino el
+lead (los UTM) y, en el de conversión, cuántos apartamentos tiene el
+condominio-. Mandarle el nombre o el teléfono de alguien a Meta activaría
+su "Advanced Matching" sin que la política de privacidad lo dijera en
+ningún lado.
+
+### Por qué existe `/gracias`, y por qué cambió el formulario
+
+Antes, `SolicitarDemo.tsx` mostraba la confirmación en el mismo lugar del
+formulario, sin cambiar de URL. Se pidió "una página de gracias con evento
+de conversión", y eso llevó a mover esa confirmación a una página aparte
+-`app/gracias/page.tsx`- por dos razones, una pedida y una técnica:
+
+1. Algunas configuraciones de Google Ads / Meta Ads solo saben medir
+   conversión por URL visitada, no por evento de JavaScript. Tener una
+   página de verdad cubre ese caso, no solo el de un evento manual.
+2. Es más confiable. Disparar `gtag`/`fbq` y navegar a otra URL casi al
+   mismo tiempo -que es como funcionaba antes de este cambio- le da al
+   navegador la oportunidad de cortar esa petición a mitad de camino antes
+   de que salga. El evento de conversión ahora se dispara DESPUÉS de que la
+   navegación a "/gracias" ya terminó, sin nada compitiendo con la
+   petición.
+
+La navegación es completa (`window.location.href`), no con el enrutador de
+cliente de Next: `gtag`/`fbq` se inicializan una sola vez, en el layout
+raíz, y solo mandan una vista de página automática en ESE momento. Con una
+navegación de cliente, "/gracias" cargaría igual pero nunca se contaría
+como una página vista aparte en ninguno de los dos paneles -haría falta
+cablear a mano el aviso de cambio de ruta, que este sitio no trae-. Los
+datos para saludar por nombre viajan por `sessionStorage`, nunca por la URL
+("?nombre=...&whatsapp=..."): un query string es justo lo que un píxel de
+analítica suele mandar de vuelta a su servidor como contexto de la página,
+y eso habría mandado el nombre y el teléfono de un lead a Google y a Meta
+sin que la política de privacidad lo dijera. `/gracias` queda fuera de
+`robots.txt` (ver `app/robots.ts`) y del `sitemap.xml`: es una confirmación,
+no contenido, y aparecer en un buscador significaría que cualquiera puede
+llegar ahí sin haber enviado el formulario -inflando las conversiones si
+algún día también se miden por URL visitada-.
+
+### Captura de UTM (`lib/utm.ts`)
+
+Se lee `utm_source` / `utm_medium` / `utm_campaign` de la URL en cada
+carga de página y se guarda en `localStorage` -pero SOLO si la URL de
+verdad trae al menos uno-: una visita sin UTM (alguien que pasa de "/" a
+"/privacidad") no borra el origen real con el que se llegó. Es atribución
+de "último toque con UTM", no del primero: si la misma persona vuelve
+después por un anuncio distinto, se le atribuye ese anuncio, que es el
+comportamiento por defecto de Google Ads y Meta Ads en sus propias
+plataformas. Los valores se recortan a 100 caracteres antes de guardarse
+-vienen de la URL, que cualquiera escribe a mano, no de un anuncio real- y
+`functions/api/solicitud-demo.ts` los vuelve a recortar del lado del
+servidor por la misma razón que ya regía para "nombre" y "condominio": no
+confiar en el largo de nada que llegue del cliente.
+
+### CSP ampliada
+
+`public/_headers` ahora permite `googletagmanager.com`, `google-analytics.com`
+(con comodín de subdominio regional), `connect.facebook.net` y
+`www.facebook.com`. El detalle de qué directiva necesita cada uno está en
+los comentarios del propio archivo -se investigó el origen real que usa
+cada script, no se copió una plantilla-. Ninguno de los dos scripts se
+carga hasta el consentimiento; la CSP define qué SE PUEDE cargar, no
+cuándo, eso lo decide `lib/analitica.ts`.
 
 ## Por qué este stack y no el que se sugirió al pedir el plan
 

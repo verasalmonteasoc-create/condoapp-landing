@@ -1,5 +1,8 @@
+"use client";
+
 import { MockupCelular } from "@/components/secciones/MockupCelular";
 import { IconoAuriculares, IconoCelular, IconoEscudo } from "@/components/marca/Iconos";
+import { rastrearClicDemo } from "@/lib/analitica";
 
 const CONFIANZA = [
   { Icono: IconoEscudo, texto: "Probado en condominios dominicanos" },
@@ -33,7 +36,11 @@ export function Portada() {
           </p>
 
           <div className="mt-7 flex flex-col items-start gap-3">
-            <a href="#demo" className="btn btn-accion btn-lg w-full sm:w-auto">
+            <a
+              href="#demo"
+              onClick={() => rastrearClicDemo("hero")}
+              className="btn btn-accion btn-lg w-full sm:w-auto"
+            >
               Solicita una demo gratis
             </a>
             {/* neutro-600, no neutro-500: este párrafo cae sobre el fondo

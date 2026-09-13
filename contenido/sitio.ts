@@ -31,6 +31,22 @@ export const SITIO = {
    * las variables de entorno de la Function, nunca aquí.
    */
   turnstileSitekey: "",
+
+  /**
+   * PENDIENTE: ID de medición de GA4 ("G-XXXXXXXXXX", en Google Analytics ->
+   * Administrar -> Flujos de datos -> el flujo de este sitio). No es
+   * secreto: viaja al navegador en cualquier integración de GA4, por diseño.
+   * Mientras esté vacío, `lib/analitica.ts` no carga nada de Google -ni
+   * siquiera con el consentimiento aceptado-.
+   */
+  gaId: "",
+
+  /**
+   * PENDIENTE: ID del píxel de Meta (Events Manager -> el píxel de este
+   * sitio -> Configuración). Tampoco es secreto -viaja al navegador-.
+   * Mientras esté vacío, no se carga Meta Pixel.
+   */
+  metaPixelId: "",
 } as const;
 
 export function enlaceWhatsapp(mensaje: string): string | null {

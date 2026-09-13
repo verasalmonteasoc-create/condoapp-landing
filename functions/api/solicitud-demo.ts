@@ -66,6 +66,21 @@ function json(cuerpo: unknown, estado: number): Response {
 }
 
 /**
+ * Recorta un parámetro UTM antes de guardarlo. Espejo a propósito de
+ * `limpiar()` en `lib/utm.ts` -no se importa de ahí: ese archivo lleva
+ * "use client" y toca `localStorage`, y traerlo aquí solo por dos líneas de
+ * texto habría mezclado un módulo de navegador con una Function de
+ * servidor sin necesidad real-. Un utm_campaign viene de la URL, que
+ * cualquiera escribe a mano: sin este tope, una URL fabricada con miles de
+ * caracteres en ese parámetro viajaría tal cual hasta Airtable.
+ */
+function limpiarUTM(valor: unknown): string | undefined {
+  if (typeof valor !== "string") return undefined;
+  const recortado = valor.replace(/\s+/g, " ").trim().slice(0, 100);
+  return recortado || undefined;
+}
+
+/**
  * ¿El origen de la petición es este mismo sitio?
  *
  * Este formulario no usa cookies de sesión -no hay con qué autenticar a
@@ -156,7 +171,13 @@ export const onRequestPost: FuncionPagina<Env> = async (contexto) => {
     return json({ error: "Origen no permitido." }, 403);
   }
 
-  let cuerpo: Partial<Solicitud> & { senuelo?: string; turnstileToken?: string };
+  let cuerpo: Partial<Solicitud> & {
+    senuelo?: string;
+    turnstileToken?: string;
+    utm_source?: string;
+    utm_medium?: string;
+    utm_campaign?: string;
+  };
   try {
     cuerpo = await request.json();
   } catch {
@@ -237,6 +258,11 @@ export const onRequestPost: FuncionPagina<Env> = async (contexto) => {
           // Registro de auditoría mínimo: quién (Nombre/WhatsApp, arriba),
           // cuándo (Recibido en) y desde qué IP.
           IP: ip,
+          // De qué campaña vino -- null y no "" cuando no viene ninguno, que
+          // es como Airtable espera una columna de texto vacía en su API.
+          utm_source: limpiarUTM(cuerpo.utm_source) ?? null,
+          utm_medium: limpiarUTM(cuerpo.utm_medium) ?? null,
+          utm_campaign: limpiarUTM(cuerpo.utm_campaign) ?? null,
         },
       }),
     },

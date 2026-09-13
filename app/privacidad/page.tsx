@@ -66,6 +66,26 @@ export default function Privacidad() {
 
         <section>
           <h2 className="text-[13px] font-bold uppercase tracking-[0.08em] text-marca-700 dark:text-marca-300">
+            Cookies de análisis
+          </h2>
+          <p className="mt-2">
+            Si aceptas el aviso que aparece al entrar, usamos Google Analytics y Meta Pixel -los
+            dos con sede fuera de República Dominicana- para saber qué páginas se visitan y qué
+            anuncio trajo a cada visitante. Ninguno de los dos se activa antes de que aceptes, y
+            si rechazas o simplemente no respondes, el sitio sigue funcionando igual: no es
+            obligatorio para solicitar una demostración.
+          </p>
+          <p className="mt-2">
+            A quien sí solicita una demostración, además, le guardamos de qué campaña vino
+            -<code>utm_source</code>, <code>utm_medium</code> y <code>utm_campaign</code>, si la
+            URL con la que llegó los traía- junto con el resto de la solicitud en Airtable. No
+            mandamos tu nombre ni tu WhatsApp a Google ni a Meta: lo único que reciben es que
+            ocurrió una solicitud y de qué campaña vino, sin decir de quién.
+          </p>
+        </section>
+
+        <section>
+          <h2 className="text-[13px] font-bold uppercase tracking-[0.08em] text-marca-700 dark:text-marca-300">
             Tus derechos
           </h2>
           <p className="mt-2">

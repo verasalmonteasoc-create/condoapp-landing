@@ -3,26 +3,24 @@
 import Script from "next/script";
 import { useId, useState } from "react";
 
-import { IconoAlerta, IconoCheck, IconoWhatsapp } from "@/components/marca/Iconos";
-import { enlaceWhatsapp, SITIO } from "@/contenido/sitio";
+import { IconoAlerta } from "@/components/marca/Iconos";
+import { SITIO } from "@/contenido/sitio";
 import { useTurnstile } from "@/lib/useTurnstile";
-import {
-  type ErroresSolicitud,
-  type Solicitud,
-  formatearTelefono,
-  sinErrores,
-  telefonoRD,
-  validar,
-} from "@/lib/validacion";
+import { type ErroresSolicitud, type Solicitud, sinErrores, validar } from "@/lib/validacion";
+import { leerUTM } from "@/lib/utm";
 
 const VACIO: Solicitud = { nombre: "", whatsapp: "", condominio: "", apartamentos: "" };
 
-type Estado = "editando" | "enviando" | "enviado" | "fallido";
+type Estado = "editando" | "enviando" | "fallido";
+
+// Lo que lee app/gracias/page.tsx al llegar -de un solo uso, se borra ahí
+// mismo en cuanto se lee-. Nunca en la URL: ver el porqué en ese archivo.
+const CLAVE_ENTREGA = "condoapp_gracias";
 
 /**
- * CTA final + formulario. Un solo componente porque comparten un mismo
- * estado de envío: el título tiene que reflejar si ya se mandó la
- * solicitud, no solo el formulario.
+ * El formulario. Ya NO muestra la confirmación en el mismo lugar -antes lo
+ * hacía-: al enviarse con éxito navega a "/gracias", ver ese archivo para
+ * las dos razones (una pedida, una técnica) de por qué.
  */
 export function SolicitarDemo() {
   const [datos, setDatos] = useState<Solicitud>(VACIO);
@@ -75,16 +73,35 @@ export function SolicitarDemo() {
     setEstado("enviando");
     setErrorEnvio(null);
     try {
+      const utm = leerUTM();
       const res = await fetch("/api/solicitud-demo", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...datos, senuelo, turnstileToken: token }),
+        body: JSON.stringify({ ...datos, senuelo, turnstileToken: token, ...utm }),
       });
       if (!res.ok) {
         const cuerpo = await res.json().catch(() => null);
         throw new Error(cuerpo?.error || "No se pudo enviar la solicitud.");
       }
-      setEstado("enviado");
+      // La confirmación y el evento de conversión viven en "/gracias", no
+      // aquí: se guarda lo mínimo para que esa página pueda saludar por
+      // nombre y ofrecer el enlace de WhatsApp, y se navega -reiniciar()
+      // corre igual en el `finally` de abajo, pero para entonces la página
+      // ya está cambiando, así que no hay ningún parpadeo del formulario
+      // "reseteado" antes de irse.
+      sessionStorage.setItem(
+        CLAVE_ENTREGA,
+        JSON.stringify({ nombre: datos.nombre, whatsapp: datos.whatsapp, condominio: datos.condominio }),
+      );
+      // Navegación completa a propósito, no `router.push()`: `gtag`/`fbq` se
+      // inicializan una sola vez, en el layout, y solo mandan una "vista de
+      // página" automática en ESE momento -no reaccionan solos a un cambio
+      // de ruta del cliente sin cablear el listener de historial de GA4/Meta,
+      // que este sitio no trae-. Con `router.push()`, "/gracias" cargaría
+      // pero nunca se contaría como una página vista aparte en ninguno de
+      // los dos paneles. Con una navegación de verdad, sí.
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+      window.location.href = "/gracias";
     } catch (err) {
       setEstado("fallido");
       setErrorEnvio(
@@ -99,36 +116,6 @@ export function SolicitarDemo() {
       // que la persona entienda qué campo tiene que volver a tocar.
       reiniciar();
     }
-  }
-
-  if (estado === "enviado") {
-    const digitos = telefonoRD(datos.whatsapp);
-    const wa = enlaceWhatsapp(
-      `Hola, soy ${datos.nombre.split(/\s+/)[0]} de ${datos.condominio}. Acabo de solicitar una demo de CondoApp.`,
-    );
-    return (
-      <div
-        className="rounded-tarjeta border border-neutro-200 bg-white p-6 shadow-elevada dark:border-noche-700 dark:bg-noche-900 dark:shadow-none sm:p-8"
-        tabIndex={-1}
-      >
-        <span className="grid h-12 w-12 place-items-center rounded-full bg-exito-100 text-exito-700">
-          <IconoCheck className="h-6 w-6" />
-        </span>
-        <h3 className="mt-5 text-[22px] font-black tracking-[-0.01em] text-neutro-900 dark:text-noche-100">
-          Recibimos tu solicitud, {datos.nombre.split(/\s+/)[0]}.
-        </h3>
-        <p className="mt-2 text-base leading-relaxed text-neutro-700 dark:text-noche-400">
-          Te contactamos al {digitos ? formatearTelefono(digitos) : datos.whatsapp} en menos de 24
-          horas. Sin compromiso.
-        </p>
-        {wa && (
-          <a href={wa} target="_blank" rel="noreferrer" className="btn btn-secundario mt-6">
-            <IconoWhatsapp />
-            Escribir por WhatsApp ahora
-          </a>
-        )}
-      </div>
-    );
   }
 
   return (

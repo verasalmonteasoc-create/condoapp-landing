@@ -1,3 +1,4 @@
+import { RastreoScroll } from "@/components/RastreoScroll";
 import { Barra } from "@/components/secciones/Barra";
 import { Beneficios } from "@/components/secciones/Beneficios";
 import { Cierre } from "@/components/secciones/Cierre";
@@ -13,6 +14,7 @@ import { ProblemaSolucion } from "@/components/secciones/ProblemaSolucion";
 export default function PaginaPrincipal() {
   return (
     <>
+      <RastreoScroll />
       <Barra />
       <main>
         <Portada />

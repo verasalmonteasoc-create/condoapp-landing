@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Lato } from "next/font/google";
 
+import { ConsentimientoCookies } from "@/components/ConsentimientoCookies";
 import { SITIO } from "@/contenido/sitio";
 
 import "./globals.css";
@@ -38,7 +39,10 @@ export const metadata: Metadata = {
 export default function RaizIdioma({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es-DO" className={lato.variable}>
-      <body className="font-sans">{children}</body>
+      <body className="font-sans">
+        {children}
+        <ConsentimientoCookies />
+      </body>
     </html>
   );
 }
