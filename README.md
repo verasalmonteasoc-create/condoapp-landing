@@ -21,8 +21,8 @@ npm run lint
 
 ## Antes de publicar
 
-Estas cinco cosas están señaladas en el código con un comentario `PENDIENTE`
--- `grep -rn PENDIENTE .` las encuentra todas:
+Estas seis cosas están señaladas en el código con un comentario
+`PENDIENTE` -- `grep -rn PENDIENTE .` las encuentra todas:
 
 1. **`contenido/sitio.ts` -> `whatsapp`.** Vacío. Mientras lo esté, los
    botones de WhatsApp del sitio no se muestran (mismo patrón que
@@ -30,12 +30,38 @@ Estas cinco cosas están señaladas en el código con un comentario `PENDIENTE`
 2. **`contenido/sitio.ts` -> `url`.** Está en `https://demo.aplicacionesrd.com`
    como valor provisional. No puede ser `condoapp.aplicacionesrd.com`: ese
    subdominio ya es el de la aplicación real.
-3. **Variables de entorno de Airtable y Turnstile.** Ver `.env.example`.
-   Se configuran en Cloudflare Pages (Settings -> Environment variables),
-   nunca en un archivo que llegue a git.
-4. **`app/privacidad/page.tsx`.** Es un borrador. Falta que alguien con
-   criterio legal en RD lo revise contra la Ley 172-13.
-5. **Sin sección de testimonios.** El único testimonio que se propuso para
+3. **La base de Airtable todavía no existe.** Créala con este nombre de
+   tabla y estas columnas EXACTAS -mayúsculas y todo-, porque
+   `functions/api/solicitud-demo.ts` las manda con estos nombres tal cual:
+
+   | Columna | Tipo en Airtable | Qué le llega |
+   |---|---|---|
+   | `Nombre` | Texto de una línea | El nombre tal como se escribió |
+   | `WhatsApp` | Número de teléfono (o texto) | 10 dígitos, sin espacios ni el 809/829/849 alterado |
+   | `Condominio` | Texto de una línea | Nombre del condominio o administradora |
+   | `Apartamentos` | Número | Vacío (`null`) si no se escribió |
+   | `Recibido en` | Fecha, con hora | ISO 8601, en UTC |
+
+   Un nombre de columna que no coincida no rompe el sitio -Airtable
+   simplemente rechaza la fila con un error que la Function convierte en
+   "No se pudo guardar la solicitud"-, pero la persona interesada se pierde
+   sin que nadie lo note hasta revisar la base. Después de crearla, copia el
+   ID de la base (empieza con `app`) y el nombre exacto de la tabla a
+   `.env` -ver `.env.example`-, y la clave a `AIRTABLE_API_KEY` (un
+   [personal access token](https://airtable.com/create/tokens) con permiso
+   `data.records:write` sobre esa base, no la contraseña de la cuenta).
+4. **Turnstile (anti-bots).** Igual que el punto anterior pero para
+   `TURNSTILE_SECRET_KEY` -se crea en el panel de Cloudflare, es gratis, y
+   el formulario funciona sin él mientras no se agregue (no hay verificación
+   anti-bots todavía, solo la validación de datos).
+5. **`app/privacidad/page.tsx`.** Ya cita la Ley 172-13 con precisión -los
+   cuatro derechos ARCO, verificados por búsqueda antes de escribirlos- y
+   dice con qué proveedor externo se comparte el dato (Airtable, con sede
+   fuera de RD). Sigue siendo un borrador: falta que alguien con criterio
+   legal en RD lo revise, y en particular que identifique ante quién se
+   ejercen esos derechos en la práctica -la ley no crea una autoridad de
+   protección de datos de propósito general, y este borrador no inventa una.
+6. **Sin sección de testimonios.** El único testimonio que se propuso para
    esta portada no era de un cliente real, así que no se publicó ninguno.
    Cuando exista uno de verdad, se agrega un componente `PruebaSocial.tsx`
    entre `ComoFunciona` y `Preguntas`.

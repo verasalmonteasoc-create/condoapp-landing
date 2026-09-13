@@ -7,9 +7,9 @@ import { Portada } from "@/components/secciones/Portada";
 import { Preguntas } from "@/components/secciones/Preguntas";
 import { ProblemaSolucion } from "@/components/secciones/ProblemaSolucion";
 
-// No hay sección de prueba social: el testimonio que se propuso para esta
-// portada no venía de un cliente real, y esta página no publica una cita
-// inventada. Se agrega en cuanto exista una de verdad.
+// PENDIENTE: no hay sección de prueba social. El testimonio que se propuso
+// para esta portada no venía de un cliente real, y esta página no publica
+// una cita inventada. Se agrega en cuanto exista una de verdad.
 export default function PaginaPrincipal() {
   return (
     <>
