@@ -1,0 +1,9 @@
+# Configuración de Cloudflare Pages.
+#
+# El build de Next ("next build" con output: "export") deja el sitio
+# estático en out/. Cloudflare Pages sirve esa carpeta y, además, descubre
+# solo la carpeta functions/ del repositorio y la despliega como Pages
+# Functions -- no hace falta declararlas aquí.
+name = "condoapp-landing"
+pages_build_output_dir = "out"
+compatibility_date = "2026-09-01"

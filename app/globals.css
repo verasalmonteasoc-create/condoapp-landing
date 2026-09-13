@@ -1,0 +1,145 @@
+@import "tailwindcss";
+
+/* =============================================================================
+   TOKENS -- los mismos valores hexadecimales que frontend/tailwind.config.js
+   de la aplicación (condoapp/frontend). No son un tema nuevo: es el sistema
+   de diseño ya aprobado, para que quien vea esta portada y después entre a
+   la app no note un cambio de marca a mitad de camino.
+
+   Tailwind v4 se configura en CSS con @theme, no en un tailwind.config.js.
+   ============================================================================= */
+@theme {
+  --font-sans: "Lato", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+
+  --color-marca-950: #001f66;
+  --color-marca-900: #003d66;
+  --color-marca-800: #00456f;
+  --color-marca-700: #00558c; /* azul principal: barra, botones primarios */
+  --color-marca-600: #0071a2;
+  --color-marca-500: #008bb0;
+  --color-marca-400: #00a5c4;
+  --color-marca-300: #00c1d5;
+  --color-marca-200: #74c3d5;
+  --color-marca-100: #cfe8f0;
+  --color-marca-50: #eaf4f8;
+
+  --color-accion-700: #c46f00;
+  --color-accion-600: #ed8c00; /* naranja principal de CTA */
+  --color-accion-500: #f99300;
+  --color-accion-100: #fdf0dc;
+  --color-accion-50: #fef8ef;
+
+  --color-alerta-700: #9c0b24;
+  --color-alerta-600: #c70f2e;
+  --color-alerta-500: #ee464f;
+  --color-alerta-100: #fbe3e6;
+  --color-alerta-50: #fef2f3;
+
+  --color-exito-700: #0b5d3b;
+  --color-exito-600: #0f7b4f;
+  --color-exito-500: #12a268;
+  --color-exito-100: #dcf3e8;
+  --color-exito-50: #effaf4;
+
+  --color-neutro-900: #1b1d21;
+  --color-neutro-700: #3d4650;
+  --color-neutro-600: #585858;
+  --color-neutro-500: #6b7684;
+  --color-neutro-400: #98a2b0;
+  --color-neutro-300: #d6dde5;
+  --color-neutro-200: #e3e8ef;
+  --color-neutro-100: #edf1f5;
+  --color-neutro-50: #f2f5f7;
+
+  --radius-tarjeta: 8px;
+  --radius-campo: 6px;
+
+  --shadow-tarjeta: 0 1px 2px 0 rgb(16 24 40 / 0.04), 0 1px 3px 0 rgb(16 24 40 / 0.06);
+  --shadow-elevada: 0 4px 12px -2px rgb(16 24 40 / 0.1), 0 2px 6px -2px rgb(16 24 40 / 0.06);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-neutro-50);
+  color: var(--color-neutro-900);
+  font-family: var(--font-sans);
+}
+
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-marca-300);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* =============================================================================
+   COMPONENTES -- calcados de frontend/app/globals.css de la app. Mismas
+   clases, mismo comportamiento: botón píldora, tarjeta, campo de formulario.
+   ============================================================================= */
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5
+           text-sm font-bold transition-colors duration-150
+           disabled:cursor-not-allowed disabled:opacity-55;
+  }
+  .btn-sm {
+    @apply px-4 py-2 text-[13.5px];
+  }
+  .btn-lg {
+    @apply px-[26px] py-3.5 text-base;
+  }
+  /*
+   * Estas dos NO llevan `@apply btn ...`: Tailwind v4 solo deja aplicar
+   * utilidades reales, no otra clase propia definida más arriba ("Cannot
+   * apply unknown utility class"). Por eso cada botón lleva DOS clases en
+   * el marcado -p. ej. `className="btn btn-accion"`- y es la cascada normal
+   * de CSS, no `@apply`, la que junta la forma de `.btn` con el color de
+   * cada variante.
+   */
+  .btn-accion {
+    @apply bg-accion-600 text-neutro-900 hover:bg-accion-700 active:bg-accion-700;
+  }
+  .btn-secundario {
+    @apply border border-marca-700 bg-white text-marca-700
+           hover:bg-marca-50 active:bg-marca-100;
+  }
+
+  .campo {
+    @apply w-full rounded-campo border border-neutro-300 bg-white px-3.5 py-2.5
+           text-[15px] text-neutro-900 placeholder:text-neutro-400
+           transition-colors focus:border-marca-600 focus:outline-none
+           focus:ring-2 focus:ring-marca-300/60;
+  }
+  .campo[aria-invalid="true"] {
+    @apply border-alerta-600 focus:border-alerta-600 focus:ring-alerta-500/40;
+  }
+  .etiqueta {
+    @apply mb-1.5 block text-sm font-bold text-neutro-700;
+  }
+
+  .aviso-error {
+    @apply flex items-start gap-3 rounded-campo border border-alerta-600/30
+           bg-alerta-50 px-4 py-3 text-sm text-alerta-700;
+  }
+}
