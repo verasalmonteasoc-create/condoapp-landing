@@ -1,9 +1,11 @@
 "use client";
 
+import Script from "next/script";
 import { useId, useState } from "react";
 
 import { IconoAlerta, IconoCheck, IconoWhatsapp } from "@/components/marca/Iconos";
-import { enlaceWhatsapp } from "@/contenido/sitio";
+import { enlaceWhatsapp, SITIO } from "@/contenido/sitio";
+import { useTurnstile } from "@/lib/useTurnstile";
 import {
   type ErroresSolicitud,
   type Solicitud,
@@ -28,6 +30,21 @@ export function SolicitarDemo() {
   const [estado, setEstado] = useState<Estado>("editando");
   const [errorEnvio, setErrorEnvio] = useState<string | null>(null);
   const idResumen = useId();
+  // `token` se saca del hook de una vez, en vez de leer `turnstile.token`
+  // donde se use: el linter de reglas de hooks no puede ver que ese campo es
+  // estado (viene de un `useState` dentro del hook) y no una ref -el mismo
+  // objeto también trae `contenedorRef`, que sí lo es-, y marca CUALQUIER
+  // acceso encadenado como si fuera leer `.current` en el render.
+  // Desestructurar aquí, una sola vez, es lo que el linter reconoce sin dudar
+  // como una variable de estado normal.
+  const { contenedorRef, token, reiniciar, marcarScriptListo } = useTurnstile(
+    SITIO.turnstileSitekey,
+  );
+  // Señuelo: un campo que ningún humano ve ni llena -está fuera de pantalla,
+  // ver el JSX más abajo-, pero que un script que rellena "todo lo que
+  // parezca un campo de texto" completa igual. El servidor rechaza en
+  // silencio cualquier envío que llegue con esto no vacío.
+  const [senuelo, setSenuelo] = useState("");
 
   function cambiar<K extends keyof Solicitud>(campo: K, valor: string) {
     const siguiente = { ...datos, [campo]: valor };
@@ -50,13 +67,18 @@ export function SolicitarDemo() {
       return;
     }
 
+    if (SITIO.turnstileSitekey && !token) {
+      setErrorEnvio("Completa la verificación antes de enviar.");
+      return;
+    }
+
     setEstado("enviando");
     setErrorEnvio(null);
     try {
       const res = await fetch("/api/solicitud-demo", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(datos),
+        body: JSON.stringify({ ...datos, senuelo, turnstileToken: token }),
       });
       if (!res.ok) {
         const cuerpo = await res.json().catch(() => null);
@@ -70,6 +92,12 @@ export function SolicitarDemo() {
           ? err.message
           : "No se pudo enviar la solicitud. Revisa tu conexión e intenta de nuevo.",
       );
+    } finally {
+      // Un token de Turnstile es de un solo uso -sirvió o no, hay que pedir
+      // uno nuevo para el próximo intento. Sin esto, un reintento tras un
+      // error de Airtable fallaría siempre con "verificación inválida" y sin
+      // que la persona entienda qué campo tiene que volver a tocar.
+      reiniciar();
     }
   }
 
@@ -114,9 +142,41 @@ export function SolicitarDemo() {
       // aria-describedby de cada campo, que sigue señalando su propio error-.
       aria-describedby={errorEnvio ? idResumen : undefined}
     >
+      {/*
+        `lazyOnload`, no `afterInteractive`: el widget no tiene que estar
+        listo en el primer segundo de vida de la página -nadie llena un
+        formulario de cuatro campos tan rápido-, y cargarlo tarde deja el
+        primer renderizado de la portada libre de una petición de red a un
+        tercero. El script solo puede venir de challenges.cloudflare.com: es
+        justo el origen que permite `script-src` en public/_headers.
+      */}
+      <Script
+        src="https://challenges.cloudflare.com/turnstile/v0/api.js"
+        strategy="lazyOnload"
+        onLoad={marcarScriptListo}
+      />
+
       <h3 className="text-[20px] font-black tracking-[-0.01em] text-neutro-900 dark:text-noche-100">
         Solicita tu demo gratis
       </h3>
+
+      {/* Señuelo: fuera de la pantalla, no con display:none -algunos
+          rastreadores automatizados sí respetan esa propiedad y se lo
+          saltan-. `aria-hidden` y `tabIndex={-1}` para que a un lector de
+          pantalla o a alguien navegando con teclado ni siquiera les conste
+          que existe: nunca debe rellenarlo una persona real. */}
+      <div className="absolute -left-[9999px] h-px w-px overflow-hidden" aria-hidden="true">
+        <label htmlFor="campo-sitio-web">Sitio web</label>
+        <input
+          id="campo-sitio-web"
+          name="sitio-web"
+          type="text"
+          tabIndex={-1}
+          autoComplete="off"
+          value={senuelo}
+          onChange={(e) => setSenuelo(e.target.value)}
+        />
+      </div>
 
       {errorEnvio && (
         <div className="aviso-error mt-4" role="alert">
@@ -216,7 +276,23 @@ export function SolicitarDemo() {
           )}
         </div>
 
-        <button type="submit" className="btn btn-accion btn-lg mt-1 w-full" disabled={estado === "enviando"}>
+        {SITIO.turnstileSitekey ? (
+          <div ref={contenedorRef} />
+        ) : (
+          // Mismo patrón que el botón de WhatsApp cuando falta el número
+          // (contenido/sitio.ts): se avisa en vez de mostrar un widget roto.
+          // El servidor de todos modos exige la clave secreta -esto no es la
+          // única barrera, solo la señal honesta de que falta configurarla.
+          <p className="text-[13px] text-neutro-500 dark:text-noche-400">
+            Verificación anti-spam pendiente de configurar.
+          </p>
+        )}
+
+        <button
+          type="submit"
+          className="btn btn-accion btn-lg mt-1 w-full"
+          disabled={estado === "enviando" || (!!SITIO.turnstileSitekey && !token)}
+        >
           {estado === "enviando" ? "Enviando…" : "Enviar solicitud"}
         </button>
         <p className="text-center text-[13px] text-neutro-500 dark:text-noche-400">

@@ -6,21 +6,49 @@
  * carpeta sola y la sirve en /api/solicitud-demo sin que el build de Next
  * sepa que existe.
  *
- * Reglas:
+ * ORDEN DE LAS COMPROBACIONES, Y POR QUÉ ESE ORDEN
+ * --------------------------------------------------
+ * De lo gratis a lo que cuesta, para no gastar en una petición que se iba a
+ * rechazar de todos modos:
+ *   1. Origen -- gratis, en memoria.
+ *   2. Señuelo (honeypot) -- gratis, en memoria.
+ *   3. Formato de los campos -- gratis, en memoria.
+ *   4. Límite de envíos -- una lectura local a Cloudflare (KV).
+ *   5. Turnstile -- una llamada de red a Cloudflare.
+ *   6. Airtable -- una llamada de red a un tercero.
+ * Cada paso solo se alcanza si el anterior pasó. Una IP ya bloqueada por el
+ * límite nunca llega a gastar una verificación de Turnstile ni una fila de
+ * Airtable.
+ *
+ * Reglas que ya regían y se mantienen:
  *  - Vuelve a validar TODO lo que ya validó el navegador. Un formulario que
  *    confía en el cliente se salta con una llamada directa a esta URL.
- *  - Las credenciales de Airtable viven en variables de entorno de
- *    Cloudflare (`env`, no `process.env`: las Functions no corren en Node),
- *    nunca en el bundle que llega al navegador.
+ *  - Las credenciales viven en variables de entorno de Cloudflare (`env`, no
+ *    `process.env`: las Functions no corren en Node), nunca en el bundle que
+ *    llega al navegador.
  *  - Si Airtable falla, la persona interesada no debe perderse: se responde
  *    con un error claro para que el formulario ofrezca WhatsApp como salida.
  */
 import { sinErrores, telefonoRD, validar, type Solicitud } from "../../lib/validacion";
+import { SITIO } from "../../contenido/sitio";
+
+/**
+ * Forma mínima de un KVNamespace -- lo que este archivo usa, no todo lo que
+ * ofrece la API real. Mismo motivo que ya explicaba este archivo para no
+ * traer `@cloudflare/workers-types`: una dependencia de tipos entera por dos
+ * métodos.
+ */
+type EspacioClaveValor = {
+  get(clave: string): Promise<string | null>;
+  put(clave: string, valor: string, opciones?: { expirationTtl?: number }): Promise<void>;
+};
 
 type Env = {
   AIRTABLE_BASE_ID: string;
   AIRTABLE_TABLE_NAME: string;
   AIRTABLE_API_KEY: string;
+  TURNSTILE_SECRET_KEY: string;
+  LIMITADOR: EspacioClaveValor;
 };
 
 /**
@@ -37,12 +65,113 @@ function json(cuerpo: unknown, estado: number): Response {
   return new Response(JSON.stringify(cuerpo), { status: estado, headers: CABECERAS_JSON });
 }
 
-export const onRequestPost: FuncionPagina<Env> = async (contexto) => {
-  let cuerpo: Partial<Solicitud>;
+/**
+ * ¿El origen de la petición es este mismo sitio?
+ *
+ * Este formulario no usa cookies de sesión -no hay con qué autenticar a
+ * nadie en una portada pública-, así que el CSRF clásico (un token que viaje
+ * junto a una cookie) no aplica: no hay sesión que un tercero pueda montar a
+ * caballo. La amenaza real y equivalente aquí es otra: cualquier página en
+ * cualquier otro dominio puede tener un <form> oculto apuntando a esta URL y
+ * dispararlo con el clic de un visitante desprevenido, o un script puede
+ * llamarla directo sin que nadie visite jamás esta portada. Comprobar que la
+ * petición vino de ESTE origen cierra las dos vías con lo único que ya viaja
+ * en toda petición del navegador: la cabecera Origin.
+ *
+ * Se acepta también cualquier subdominio de "pages.dev": son las vistas
+ * previas que Cloudflare crea solas por cada rama o solicitud de cambios: sin
+ * esto, probar el formulario antes de fusionar a producción fallaría siempre.
+ */
+function origenValido(request: Request): boolean {
+  const origen = request.headers.get("Origin");
+  if (!origen) return false; // Un POST directo (curl, un bot) no manda Origin.
+  if (origen === SITIO.url) return true;
   try {
-    cuerpo = await contexto.request.json();
+    return new URL(origen).hostname.endsWith(".pages.dev");
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Verifica el token de Turnstile contra la API de Cloudflare.
+ *
+ * Se llama SIEMPRE desde el servidor, nunca desde el navegador: la clave
+ * secreta no puede viajar al cliente, y un token no verificado no demuestra
+ * nada -cualquiera puede mandar un texto cualquiera en ese campo-.
+ */
+async function turnstileValido(token: string, secreto: string, ip: string): Promise<boolean> {
+  if (!token) return false;
+  try {
+    const respuesta = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ secret: secreto, response: token, remoteip: ip }),
+    });
+    const resultado = (await respuesta.json()) as { success?: boolean };
+    return resultado.success === true;
+  } catch {
+    // Si Cloudflare mismo no responde, no hay manera de confirmar al
+    // visitante -- se trata como token inválido, nunca como válido por
+    // omisión. Fallar cerrado, no abierto.
+    return false;
+  }
+}
+
+/**
+ * Límite de envíos por clave (una IP o un WhatsApp), con una sola lectura y,
+ * como mucho, una sola escritura por intento -incluso si alguien insiste
+ * después de ser bloqueado, no se vuelve a escribir-. Con el plan gratis de
+ * Workers KV (1,000 escrituras al día) esto importa: un limitador que
+ * escribe en cada intento de un flood se queda sin cuota antes que el propio
+ * ataque, y deja de limitar nada.
+ */
+async function dentroDelLimite(
+  kv: EspacioClaveValor,
+  clave: string,
+  limite: number,
+  ventanaSegundos: number,
+): Promise<boolean> {
+  const actual = Number((await kv.get(clave)) ?? "0");
+  if (actual >= limite) return false;
+  await kv.put(clave, String(actual + 1), { expirationTtl: ventanaSegundos });
+  return true;
+}
+
+// Cinco minutos es suficiente para frenar un script que reintenta en bucle
+// sin castigar a alguien que de verdad se equivocó y corrige el formulario.
+const VENTANA_SEGUNDOS = 300;
+const LIMITE_POR_IP = 4;
+// Por WhatsApp, no por correo: este formulario no pide correo -pedirlo solo
+// para tener qué limitar habría sido inventar un campo que el diseño no usa
+// en ningún otro lugar-. El número ya cumple el mismo papel: identifica a la
+// persona, no a la conexión.
+const LIMITE_POR_WHATSAPP = 2;
+
+export const onRequestPost: FuncionPagina<Env> = async (contexto) => {
+  const { request, env } = contexto;
+
+  // 1. Origen.
+  if (!origenValido(request)) {
+    return json({ error: "Origen no permitido." }, 403);
+  }
+
+  let cuerpo: Partial<Solicitud> & { senuelo?: string; turnstileToken?: string };
+  try {
+    cuerpo = await request.json();
   } catch {
     return json({ error: "Solicitud sin formato válido." }, 400);
+  }
+
+  // 2. Señuelo. Un campo que ningún humano ve ni llena -está fuera de
+  // pantalla en el formulario, no con display:none, que algunos rastreadores
+  // sí respetan- pero que un script que rellena "todos los campos de texto
+  // que encuentre" completa igual. Se responde éxito, no error: un error le
+  // enseña al script que su envío fue detectado; un éxito falso lo deja
+  // creyendo que funcionó, sin gastar ni una verificación de Turnstile ni una
+  // fila de Airtable en él.
+  if (cuerpo.senuelo) {
+    return json({ ok: true }, 201);
   }
 
   const datos: Solicitud = {
@@ -52,15 +181,41 @@ export const onRequestPost: FuncionPagina<Env> = async (contexto) => {
     apartamentos: String(cuerpo.apartamentos ?? ""),
   };
 
+  // 3. Formato.
   const errores = validar(datos);
   if (!sinErrores(errores)) {
     return json({ error: "Hay datos por corregir.", errores }, 422);
   }
 
-  const { AIRTABLE_BASE_ID, AIRTABLE_TABLE_NAME, AIRTABLE_API_KEY } = contexto.env;
-  if (!AIRTABLE_BASE_ID || !AIRTABLE_TABLE_NAME || !AIRTABLE_API_KEY) {
+  const ip = request.headers.get("CF-Connecting-IP") || "0.0.0.0";
+  const whatsapp = telefonoRD(datos.whatsapp); // ya no puede ser null: pasó `validar()`.
+
+  // 4. Límite de envíos.
+  const [ipDentroDelLimite, whatsappDentroDelLimite] = await Promise.all([
+    dentroDelLimite(env.LIMITADOR, `ip:${ip}`, LIMITE_POR_IP, VENTANA_SEGUNDOS),
+    dentroDelLimite(env.LIMITADOR, `wa:${whatsapp}`, LIMITE_POR_WHATSAPP, VENTANA_SEGUNDOS),
+  ]);
+  if (!ipDentroDelLimite || !whatsappDentroDelLimite) {
+    return json(
+      { error: "Ya recibimos una solicitud tuya hace un momento. Dános unos minutos." },
+      429,
+    );
+  }
+
+  // 5. Turnstile.
+  if (!env.TURNSTILE_SECRET_KEY) {
     // Config incompleta en este entorno (por ejemplo, una vista previa sin
-    // secretos). Falla claro en vez de fingir que se guardó la solicitud.
+    // secretos). Falla claro en vez de fingir que se verificó algo.
+    return json({ error: "El formulario no está configurado todavía." }, 503);
+  }
+  const humano = await turnstileValido(cuerpo.turnstileToken ?? "", env.TURNSTILE_SECRET_KEY, ip);
+  if (!humano) {
+    return json({ error: "No se pudo confirmar que eres una persona. Intenta de nuevo." }, 403);
+  }
+
+  // 6. Airtable.
+  const { AIRTABLE_BASE_ID, AIRTABLE_TABLE_NAME, AIRTABLE_API_KEY } = env;
+  if (!AIRTABLE_BASE_ID || !AIRTABLE_TABLE_NAME || !AIRTABLE_API_KEY) {
     return json({ error: "El formulario no está configurado todavía." }, 503);
   }
 
@@ -75,10 +230,13 @@ export const onRequestPost: FuncionPagina<Env> = async (contexto) => {
       body: JSON.stringify({
         fields: {
           Nombre: datos.nombre.trim(),
-          WhatsApp: telefonoRD(datos.whatsapp),
+          WhatsApp: whatsapp,
           Condominio: datos.condominio.trim(),
           Apartamentos: datos.apartamentos.trim() ? Number(datos.apartamentos) : null,
           "Recibido en": new Date().toISOString(),
+          // Registro de auditoría mínimo: quién (Nombre/WhatsApp, arriba),
+          // cuándo (Recibido en) y desde qué IP.
+          IP: ip,
         },
       }),
     },

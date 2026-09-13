@@ -82,6 +82,19 @@ describe("validar", () => {
     expect(validar({ ...SOLICITUD_VALIDA, nombre: "M" }).nombre).toBeDefined();
   });
 
+  it("rechaza un nombre absurdamente largo -antes no había techo-", () => {
+    // No es un capricho de estilo: esto viaja tal cual a Airtable, y sin
+    // límite, una llamada directa a la Function (sin pasar por este
+    // formulario) podía mandar varios megabytes en un solo campo.
+    expect(validar({ ...SOLICITUD_VALIDA, nombre: "A".repeat(81) }).nombre).toBeDefined();
+    expect(validar({ ...SOLICITUD_VALIDA, nombre: "A".repeat(80) }).nombre).toBeUndefined();
+  });
+
+  it("lo mismo para el nombre del condominio", () => {
+    expect(validar({ ...SOLICITUD_VALIDA, condominio: "A".repeat(121) }).condominio).toBeDefined();
+    expect(validar({ ...SOLICITUD_VALIDA, condominio: "A".repeat(120) }).condominio).toBeUndefined();
+  });
+
   it("rechaza un WhatsApp que no es un número dominicano", () => {
     expect(validar({ ...SOLICITUD_VALIDA, whatsapp: "123" }).whatsapp).toBeDefined();
   });

@@ -1,0 +1,69 @@
+# Cabeceras de seguridad de Cloudflare Pages.
+#
+# POR QUÉ AQUÍ Y NO EN next.config.ts
+# ------------------------------------
+# Se probó: con `output: "export"` (sin servidor propio), la función
+# `headers()` de Next compila sin error pero Next avisa tres veces que
+# "headers are not applied when exporting your application" -- son cero
+# bytes en producción. `_headers` es la sintaxis nativa de Cloudflare Pages:
+# vive en `public/`, que Next copia tal cual a `out/`, así que llega servida
+# de verdad. Ver más: https://developers.cloudflare.com/pages/configuration/headers/
+#
+# UNA SOLA POLÍTICA PARA TODO EL SITIO, A PROPÓSITO
+# ---------------------------------------------------
+# Solo la portada (/) usa el widget de Turnstile; /privacidad y la página de
+# error no. Se podría restringir la CSP de Turnstile solo a "/", pero el
+# orden de precedencia entre bloques de `_headers` con el MISMO nombre de
+# cabecera no está documentado con la certeza suficiente para arriesgarse a
+# que la portada, la única página con un formulario que depender de esto,
+# cargue con una política mal combinada. El costo de una sola política es
+# mínimo: /privacidad queda con permiso para conectar a un dominio que nunca
+# usa, no una debilidad real.
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+  Permissions-Policy: geolocation=(), camera=(), microphone=(), payment=(), usb=()
+  Cross-Origin-Opener-Policy: same-origin
+
+# =============================================================================
+# NOTAS QUE NO CABEN EN UN COMENTARIO CORTO
+# =============================================================================
+#
+# `script-src 'unsafe-inline'`. Es la única excepción real de esta política,
+# y existe por una razón verificada, no por pereza: se compiló el sitio y se
+# inspeccionó el HTML resultante -- Next.js deja 3 <script> SIN `src` en cada
+# página (el arranque de hidratación de React; no son opcionales, sin ellos
+# la página carga pero ningún botón responde). Un export estático no tiene
+# servidor que genere un nonce distinto por visita, así que no hay manera de
+# permitir SOLO esos tres scripts sin `unsafe-inline` salvo calculando su
+# hash SHA-256 en cada build -esos 3 scripts cambian de contenido en CADA
+# build- y reescribiendo este archivo después de compilar. Se evaluó y no se
+# hizo: este sitio no tiene ni un solo `dangerouslySetInnerHTML` ni contenido
+# de usuario que se vuelva a mostrar en la página -el formulario solo ENVÍA
+# datos, nunca los muestra de vuelta-, que es la superficie que un XSS
+# reflejado necesita para inyectar un script. El resto de la política
+# -`script-src` restringido a dos orígenes concretos, ninguno más- sigue
+# siendo la defensa real: ni con `unsafe-inline`, un atacante puede cargar UN
+# script desde un dominio que no sea este o challenges.cloudflare.com. Si
+# este sitio algún día muestra contenido que alguien más escribió -comentarios,
+# un CMS-, esa es la señal para invertir en el pipeline de hashes por build.
+#
+# `frame-ancestors 'none'` + `X-Frame-Options: DENY`. Los dos dicen lo mismo
+# -nadie puede meter esta página en un <iframe>-; se dejan ambos porque
+# `frame-ancestors` no lo respeta Internet Explorer, que todavía puede andar
+# por ahí en algún navegador corporativo dominicano.
+#
+# Sin `preload` en Strict-Transport-Security. Someter un dominio a la lista
+# de precarga de HSTS es difícil de revertir -queda grabado en los propios
+# navegadores, no en un servidor que se pueda apagar- y es una decisión
+# aparte, deliberada, no algo que se activa por defecto en una pasada de
+# seguridad. Se hace en https://hstspreload.org cuando el dominio lleve un
+# tiempo funcionando bien en HTTPS.
+#
+# HTTPS obligatorio en sí -que un http:// redirija a https://- no es una
+# cabecera: se activa en el panel de Cloudflare, Dominio -> SSL/TLS ->
+# Edge Certificates -> "Always Use HTTPS". Cloudflare ya emite el
+# certificado gratis para el dominio propio y cualquier subdominio.

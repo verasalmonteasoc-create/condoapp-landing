@@ -195,6 +195,19 @@ h3 {
     @apply mb-1.5 block text-sm font-bold text-neutro-700 dark:text-noche-100;
   }
 
+  .banda-cierre {
+    /*
+     * Antes iba como `style={{background: "..."}}` en Cierre.tsx. Un estilo
+     * en línea obliga a la Content-Security-Policy del sitio a permitir
+     * `style-src 'unsafe-inline'` -una excepción que se vuelve innecesaria en
+     * cuanto el color sale de aquí, de una hoja de estilos de verdad, y no
+     * del atributo `style` de un elemento-. Mismo degradado que el panel de
+     * acceso de la app (frontend/tailwind.config.js ->
+     * backgroundImage.marca-panel).
+     */
+    background: linear-gradient(150deg, #00558c 0%, #003d66 55%, #001f66 100%);
+  }
+
   .aviso-error {
     /*
      * En modo oscuro no es la misma tarjeta rosa aclarada: sobre un fondo

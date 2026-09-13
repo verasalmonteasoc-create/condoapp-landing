@@ -17,6 +17,12 @@ const config: NextConfig = {
     // línea, así que no hay nada que optimizar.
     unoptimized: true,
   },
+  // NO agregar `headers()` aquí. Se probó: con `output: "export"`, Next
+  // compila igual pero avisa tres veces que "headers are not applied when
+  // exporting your application" -- son cero bytes en producción, no un aviso
+  // decorativo. Las cabeceras de seguridad (CSP, HSTS, X-Frame-Options...)
+  // van en `public/_headers`, la sintaxis nativa de Cloudflare Pages, que sí
+  // se sirve porque todo lo que hay en `public/` se copia tal cual a `out/`.
 };
 
 export default config;

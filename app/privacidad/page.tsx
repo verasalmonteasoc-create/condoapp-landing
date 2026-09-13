@@ -34,7 +34,10 @@ export default function Privacidad() {
           <p className="mt-2">
             Cuando solicitas una demostración, guardamos tu nombre, tu número de WhatsApp, el
             nombre de tu condominio o administradora y, si lo escribes, la cantidad de
-            apartamentos. Nada más: el formulario no pide ni guarda ningún otro dato.
+            apartamentos. También guardamos la dirección IP desde la que se envió la solicitud, la
+            fecha y la hora -un registro de auditoría básico, para poder investigar un uso
+            indebido del formulario, igual que hace cualquier sitio con un formulario público-.
+            Nada más: no pedimos ni guardamos ningún otro dato.
           </p>
         </section>
 

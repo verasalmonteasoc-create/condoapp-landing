@@ -8,14 +8,7 @@ import { SolicitarDemo } from "@/components/secciones/SolicitarDemo";
  */
 export function Cierre() {
   return (
-    <section
-      id="demo"
-      className="py-14 text-white sm:py-20"
-      style={{
-        background:
-          "linear-gradient(150deg, #00558C 0%, #003D66 55%, #001F66 100%)",
-      }}
-    >
+    <section id="demo" className="banda-cierre py-14 text-white sm:py-20">
       <div className="mx-auto grid w-[min(100%-32px,1160px)] gap-10 lg:grid-cols-2 lg:items-center lg:gap-16">
         <div>
           <h2 className="max-w-[18ch] text-[30px] font-black leading-[1.08] tracking-[-0.02em] sm:text-[40px]">

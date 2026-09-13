@@ -7,3 +7,22 @@
 name = "condoapp-landing"
 pages_build_output_dir = "out"
 compatibility_date = "2026-09-01"
+
+# PENDIENTE: namespace de Workers KV para el limitador de tasa del
+# formulario -- todavía no existe, igual que la base de Airtable. Se crea
+# con `wrangler kv namespace create LIMITADOR` (o desde el panel de
+# Cloudflare: Storage & Databases -> KV -> Create), y el "id" que devuelva
+# reemplaza el de abajo. NO es un secreto -es solo un identificador, como
+# AIRTABLE_TABLE_NAME- así que puede ir aquí, en el repositorio.
+#
+# Por qué KV y no el binding "rate limiting" nuevo de Workers (el que se
+# declara como `[[unsafe.bindings]]` tipo "ratelimit"): ese binding no tiene
+# confirmado en su propia documentación que funcione desde Pages Functions
+# ni que esté disponible en el plan gratis, y de fábrica limita "por
+# ubicación de Cloudflare que atiende la petición" -- no es un contador
+# global, así que alguien repartido entre varias ubicaciones lo esquiva en
+# parte. KV sí tiene su plan gratis documentado (100,000 lecturas y 1,000
+# escrituras al día) y funciona igual en Pages Functions que en Workers.
+[[kv_namespaces]]
+binding = "LIMITADOR"
+id = "PENDIENTE_reemplazar_con_el_id_real"
