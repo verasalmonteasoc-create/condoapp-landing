@@ -27,23 +27,31 @@ const PREGUNTAS = [
 
 export function Preguntas() {
   return (
-    <section id="preguntas" className="py-14 sm:py-20">
+    <section id="preguntas" className="bg-neutro-50 py-14 dark:bg-noche-950 sm:py-20">
       <div className="mx-auto w-[min(100%-32px,1160px)]">
-        <p className="text-[13px] font-bold uppercase tracking-[0.1em] text-marca-700">Preguntas</p>
-        <h2 className="mt-2 max-w-[22ch] text-[28px] font-black leading-[1.1] tracking-[-0.02em] text-neutro-900 sm:text-[36px]">
+        <p className="text-[13px] font-bold uppercase tracking-[0.1em] text-marca-700 dark:text-marca-300">
+          Preguntas
+        </p>
+        <h2 className="mt-2 max-w-[22ch] text-[28px] font-black leading-[1.1] tracking-[-0.02em] text-neutro-900 dark:text-noche-100 sm:text-[36px]">
           Antes de que preguntes, esto es lo que responderíamos
         </h2>
 
-        <div className="mt-8 max-w-[800px] border-t border-neutro-200">
+        <div className="mt-8 max-w-[800px] border-t border-neutro-200 dark:border-noche-700">
           {PREGUNTAS.map(({ p, r }, i) => (
-            <details key={p} className="group border-b border-neutro-200" open={i === 0}>
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-5 py-5 text-[16px] font-bold text-neutro-900 hover:text-marca-700 sm:text-[17px]">
+            <details
+              key={p}
+              className="group border-b border-neutro-200 dark:border-noche-700"
+              open={i === 0}
+            >
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-5 py-5 text-[16px] font-bold text-neutro-900 hover:text-marca-700 dark:text-noche-100 dark:hover:text-marca-300 sm:text-[17px]">
                 {p}
-                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-neutro-100 text-marca-700 transition-transform group-open:rotate-45">
+                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-neutro-100 text-marca-700 transition-transform group-open:rotate-45 dark:bg-noche-900 dark:text-marca-300">
                   <IconoMas />
                 </span>
               </summary>
-              <p className="max-w-[68ch] pb-6 pr-10 text-[15px] leading-relaxed text-neutro-700">{r}</p>
+              <p className="max-w-[68ch] pb-6 pr-10 text-base leading-relaxed text-neutro-700 dark:text-noche-400">
+                {r}
+              </p>
             </details>
           ))}
         </div>

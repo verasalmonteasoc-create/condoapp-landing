@@ -6,7 +6,7 @@ import { Marca } from "@/components/marca/Marca";
  */
 export function Barra() {
   return (
-    <header className="sticky top-0 z-40 border-b border-neutro-200 bg-white/97 backdrop-blur">
+    <header className="sticky top-0 z-40 border-b border-neutro-200 bg-white/97 backdrop-blur dark:border-noche-700 dark:bg-noche-950/97">
       <div className="mx-auto flex h-[68px] w-[min(100%-32px,1160px)] items-center gap-4">
         <a href="#inicio" className="inline-flex items-center gap-2.5" aria-label="CondoApp, inicio">
           {/* El toggle de visibilidad va en un span propio, no en el className

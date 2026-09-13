@@ -38,23 +38,30 @@ const BENEFICIOS = [
 
 export function Beneficios() {
   return (
-    <section className="py-14 sm:py-20">
+    <section className="bg-neutro-50 py-14 dark:bg-noche-950 sm:py-20">
       <div className="mx-auto w-[min(100%-32px,1160px)]">
-        <p className="text-[13px] font-bold uppercase tracking-[0.1em] text-marca-700">Beneficios</p>
-        <h2 className="mt-2 max-w-[26ch] text-[28px] font-black leading-[1.1] tracking-[-0.02em] text-neutro-900 sm:text-[36px]">
+        <p className="text-[13px] font-bold uppercase tracking-[0.1em] text-marca-700 dark:text-marca-300">
+          Beneficios
+        </p>
+        <h2 className="mt-2 max-w-[26ch] text-[28px] font-black leading-[1.1] tracking-[-0.02em] text-neutro-900 dark:text-noche-100 sm:text-[36px]">
           Lo que cambia desde la primera semana
         </h2>
 
         <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {BENEFICIOS.map(({ Icono, titulo, detalle }) => (
-            <div key={titulo} className="rounded-tarjeta border border-neutro-200 bg-white p-6 shadow-tarjeta">
-              <span className="grid h-11 w-11 place-items-center rounded-[12px] bg-marca-50 text-marca-700">
+            <div
+              key={titulo}
+              className="rounded-tarjeta border border-neutro-200 bg-white p-6 shadow-tarjeta dark:border-noche-700 dark:bg-noche-900 dark:shadow-none"
+            >
+              <span className="grid h-11 w-11 place-items-center rounded-[12px] bg-marca-50 text-marca-700 dark:bg-marca-700/15 dark:text-marca-300">
                 <Icono className="h-[22px] w-[22px]" />
               </span>
-              <h3 className="mt-4 text-[17px] font-black leading-tight tracking-[-0.01em] text-neutro-900">
+              <h3 className="mt-4 text-[17px] font-black leading-tight tracking-[-0.01em] text-neutro-900 dark:text-noche-100">
                 {titulo}
               </h3>
-              <p className="mt-2 text-[14.5px] leading-relaxed text-neutro-700">{detalle}</p>
+              <p className="mt-2 text-base leading-relaxed text-neutro-700 dark:text-noche-400">
+                {detalle}
+              </p>
             </div>
           ))}
         </div>

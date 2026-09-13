@@ -79,14 +79,17 @@ export function SolicitarDemo() {
       `Hola, soy ${datos.nombre.split(/\s+/)[0]} de ${datos.condominio}. Acabo de solicitar una demo de CondoApp.`,
     );
     return (
-      <div className="rounded-tarjeta border border-neutro-200 bg-white p-7 shadow-elevada sm:p-9" tabIndex={-1}>
+      <div
+        className="rounded-tarjeta border border-neutro-200 bg-white p-6 shadow-elevada dark:border-noche-700 dark:bg-noche-900 dark:shadow-none sm:p-8"
+        tabIndex={-1}
+      >
         <span className="grid h-12 w-12 place-items-center rounded-full bg-exito-100 text-exito-700">
           <IconoCheck className="h-6 w-6" />
         </span>
-        <h3 className="mt-5 text-[22px] font-black tracking-[-0.01em] text-neutro-900">
+        <h3 className="mt-5 text-[22px] font-black tracking-[-0.01em] text-neutro-900 dark:text-noche-100">
           Recibimos tu solicitud, {datos.nombre.split(/\s+/)[0]}.
         </h3>
-        <p className="mt-2 text-[15.5px] leading-relaxed text-neutro-700">
+        <p className="mt-2 text-base leading-relaxed text-neutro-700 dark:text-noche-400">
           Te contactamos al {digitos ? formatearTelefono(digitos) : datos.whatsapp} en menos de 24
           horas. Sin compromiso.
         </p>
@@ -101,8 +104,19 @@ export function SolicitarDemo() {
   }
 
   return (
-    <form onSubmit={enviar} className="rounded-tarjeta border border-neutro-200 bg-white p-6 shadow-elevada sm:p-8" noValidate>
-      <h3 className="text-[20px] font-black tracking-[-0.01em] text-neutro-900">Solicita tu demo gratis</h3>
+    <form
+      onSubmit={enviar}
+      className="rounded-tarjeta border border-neutro-200 bg-white p-6 shadow-elevada dark:border-noche-700 dark:bg-noche-900 dark:shadow-none sm:p-8"
+      noValidate
+      // Antes `idResumen` se generaba y se le ponía a la propia alerta, pero
+      // nada la referenciaba: quedaba huérfano, un id que nadie lee. Ahora
+      // el formulario mismo la anuncia -complementa, no reemplaza, el
+      // aria-describedby de cada campo, que sigue señalando su propio error-.
+      aria-describedby={errorEnvio ? idResumen : undefined}
+    >
+      <h3 className="text-[20px] font-black tracking-[-0.01em] text-neutro-900 dark:text-noche-100">
+        Solicita tu demo gratis
+      </h3>
 
       {errorEnvio && (
         <div className="aviso-error mt-4" role="alert">
@@ -128,7 +142,7 @@ export function SolicitarDemo() {
             aria-describedby={errores.nombre ? "error-nombre" : undefined}
           />
           {errores.nombre && (
-            <p id="error-nombre" className="mt-1.5 text-[13px] text-alerta-700">
+            <p id="error-nombre" className="mt-1.5 text-[13px] text-alerta-700 dark:text-alerta-500">
               {errores.nombre}
             </p>
           )}
@@ -151,7 +165,7 @@ export function SolicitarDemo() {
             aria-describedby={errores.whatsapp ? "error-whatsapp" : undefined}
           />
           {errores.whatsapp && (
-            <p id="error-whatsapp" className="mt-1.5 text-[13px] text-alerta-700">
+            <p id="error-whatsapp" className="mt-1.5 text-[13px] text-alerta-700 dark:text-alerta-500">
               {errores.whatsapp}
             </p>
           )}
@@ -173,7 +187,7 @@ export function SolicitarDemo() {
             aria-describedby={errores.condominio ? "error-condominio" : undefined}
           />
           {errores.condominio && (
-            <p id="error-condominio" className="mt-1.5 text-[13px] text-alerta-700">
+            <p id="error-condominio" className="mt-1.5 text-[13px] text-alerta-700 dark:text-alerta-500">
               {errores.condominio}
             </p>
           )}
@@ -181,7 +195,8 @@ export function SolicitarDemo() {
 
         <div>
           <label className="etiqueta" htmlFor="campo-apartamentos">
-            Cantidad de apartamentos <span className="font-normal text-neutro-500">(opcional)</span>
+            Cantidad de apartamentos{" "}
+            <span className="font-normal text-neutro-500 dark:text-noche-400">(opcional)</span>
           </label>
           <input
             id="campo-apartamentos"
@@ -195,7 +210,7 @@ export function SolicitarDemo() {
             aria-describedby={errores.apartamentos ? "error-apartamentos" : undefined}
           />
           {errores.apartamentos && (
-            <p id="error-apartamentos" className="mt-1.5 text-[13px] text-alerta-700">
+            <p id="error-apartamentos" className="mt-1.5 text-[13px] text-alerta-700 dark:text-alerta-500">
               {errores.apartamentos}
             </p>
           )}
@@ -204,7 +219,7 @@ export function SolicitarDemo() {
         <button type="submit" className="btn btn-accion btn-lg mt-1 w-full" disabled={estado === "enviando"}>
           {estado === "enviando" ? "Enviando…" : "Enviar solicitud"}
         </button>
-        <p className="text-center text-[13px] text-neutro-500">
+        <p className="text-center text-[13px] text-neutro-500 dark:text-noche-400">
           Te contactamos en menos de 24 horas. Sin compromiso.
         </p>
       </div>

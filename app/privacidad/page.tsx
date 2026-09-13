@@ -19,14 +19,16 @@ export default function Privacidad() {
   return (
     <main className="mx-auto w-[min(100%-32px,760px)] py-14">
       <Marca />
-      <h1 className="mt-8 text-[28px] font-black tracking-[-0.02em] text-neutro-900">
+      <h1 className="mt-8 text-[28px] font-black tracking-[-0.02em] text-neutro-900 dark:text-noche-100">
         Política de privacidad
       </h1>
-      <p className="mt-2 text-[13.5px] text-neutro-500">Borrador -- pendiente de revisión legal.</p>
+      <p className="mt-2 text-[13.5px] text-neutro-500 dark:text-noche-400">
+        Borrador -- pendiente de revisión legal.
+      </p>
 
-      <div className="mt-8 flex flex-col gap-8 text-[15px] leading-relaxed text-neutro-700">
+      <div className="mt-8 flex flex-col gap-8 text-base leading-relaxed text-neutro-700 dark:text-noche-400">
         <section>
-          <h2 className="text-[13px] font-bold uppercase tracking-[0.08em] text-marca-700">
+          <h2 className="text-[13px] font-bold uppercase tracking-[0.08em] text-marca-700 dark:text-marca-300">
             Qué guardamos
           </h2>
           <p className="mt-2">
@@ -37,7 +39,7 @@ export default function Privacidad() {
         </section>
 
         <section>
-          <h2 className="text-[13px] font-bold uppercase tracking-[0.08em] text-marca-700">
+          <h2 className="text-[13px] font-bold uppercase tracking-[0.08em] text-marca-700 dark:text-marca-300">
             Para qué lo usamos
           </h2>
           <p className="mt-2">
@@ -47,7 +49,7 @@ export default function Privacidad() {
         </section>
 
         <section>
-          <h2 className="text-[13px] font-bold uppercase tracking-[0.08em] text-marca-700">
+          <h2 className="text-[13px] font-bold uppercase tracking-[0.08em] text-marca-700 dark:text-marca-300">
             Quién más lo ve
           </h2>
           <p className="mt-2">
@@ -60,7 +62,7 @@ export default function Privacidad() {
         </section>
 
         <section>
-          <h2 className="text-[13px] font-bold uppercase tracking-[0.08em] text-marca-700">
+          <h2 className="text-[13px] font-bold uppercase tracking-[0.08em] text-marca-700 dark:text-marca-300">
             Tus derechos
           </h2>
           <p className="mt-2">
@@ -70,18 +72,18 @@ export default function Privacidad() {
           </p>
           <ul className="mt-3 flex flex-col gap-2">
             <li>
-              <strong className="text-neutro-900">Acceso:</strong> saber qué guardamos de ti.
+              <strong className="text-neutro-900 dark:text-noche-100">Acceso:</strong> saber qué guardamos de ti.
             </li>
             <li>
-              <strong className="text-neutro-900">Rectificación:</strong> corregir un dato que
+              <strong className="text-neutro-900 dark:text-noche-100">Rectificación:</strong> corregir un dato que
               esté mal -tu WhatsApp, el nombre del condominio.
             </li>
             <li>
-              <strong className="text-neutro-900">Cancelación:</strong> pedir que borremos tu
+              <strong className="text-neutro-900 dark:text-noche-100">Cancelación:</strong> pedir que borremos tu
               solicitud.
             </li>
             <li>
-              <strong className="text-neutro-900">Oposición:</strong> pedir que dejemos de
+              <strong className="text-neutro-900 dark:text-noche-100">Oposición:</strong> pedir que dejemos de
               contactarte, aunque no borres el registro.
             </li>
           </ul>

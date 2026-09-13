@@ -19,10 +19,12 @@ const PASOS = [
 
 export function ComoFunciona() {
   return (
-    <section className="border-t border-neutro-200 bg-white py-14 sm:py-20">
+    <section className="border-t border-neutro-200 bg-white py-14 dark:border-noche-700 dark:bg-noche-950 sm:py-20">
       <div className="mx-auto w-[min(100%-32px,1160px)]">
-        <p className="text-[13px] font-bold uppercase tracking-[0.1em] text-marca-700">Cómo funciona</p>
-        <h2 className="mt-2 max-w-[22ch] text-[28px] font-black leading-[1.1] tracking-[-0.02em] text-neutro-900 sm:text-[36px]">
+        <p className="text-[13px] font-bold uppercase tracking-[0.1em] text-marca-700 dark:text-marca-300">
+          Cómo funciona
+        </p>
+        <h2 className="mt-2 max-w-[22ch] text-[28px] font-black leading-[1.1] tracking-[-0.02em] text-neutro-900 dark:text-noche-100 sm:text-[36px]">
           Tres pasos, no una migración
         </h2>
 
@@ -32,10 +34,12 @@ export function ComoFunciona() {
               <span className="grid h-10 w-10 place-items-center rounded-full bg-marca-700 text-[16px] font-black text-white">
                 {i + 1}
               </span>
-              <h3 className="mt-4 text-[19px] font-black leading-tight tracking-[-0.01em] text-neutro-900">
+              <h3 className="mt-4 text-[19px] font-black leading-tight tracking-[-0.01em] text-neutro-900 dark:text-noche-100">
                 {titulo}
               </h3>
-              <p className="mt-2 text-[14.5px] leading-relaxed text-neutro-700">{detalle}</p>
+              <p className="mt-2 text-base leading-relaxed text-neutro-700 dark:text-noche-400">
+                {detalle}
+              </p>
             </li>
           ))}
         </ol>

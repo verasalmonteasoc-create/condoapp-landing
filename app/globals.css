@@ -52,6 +52,24 @@
   --color-neutro-100: #edf1f5;
   --color-neutro-50: #f2f5f7;
 
+  /*
+   * MODO OSCURO -- no son grises puros: llevan un sesgo azul (misma familia
+   * de tono que marca-950/900), para que la página oscura siga leyéndose
+   * como CondoApp y no como un tema genérico. Los tres primeros son
+   * SUPERFICIES (fondo de página, tarjeta, borde); los otros dos son TEXTO.
+   *
+   * Cada uno se verificó con la fórmula de contraste de WCAG 2.x, no a ojo
+   * -- ver el cálculo en el historial de este cambio-. noche-700 en
+   * particular parece "claro" para llamarse borde, pero un borde de 1px es
+   * la única pista visual de dónde termina un campo; con un tono más sutil
+   * no llega al 3:1 que exige un componente no textual.
+   */
+  --color-noche-950: #0b1220; /* fondo de página */
+  --color-noche-900: #121b2b; /* tarjetas */
+  --color-noche-700: #5a7396; /* bordes y divisores -- 3.5:1+ contra las dos superficies */
+  --color-noche-400: #8996a8; /* texto secundario, placeholders -- 5.7:1+ */
+  --color-noche-100: #e7ecf3; /* texto principal -- 14.5:1+ */
+
   --radius-tarjeta: 8px;
   --radius-campo: 6px;
 
@@ -61,12 +79,23 @@
 
 html {
   scroll-behavior: smooth;
+  /* Le dice al navegador que esta página tiene los dos temas: los controles
+     nativos sin estilo (el "thumb" de un slider, la barra de scroll) pasan a
+     su variante oscura solos, sin que se le agregue una sola clase. */
+  color-scheme: light dark;
 }
 
 body {
   background-color: var(--color-neutro-50);
   color: var(--color-neutro-900);
   font-family: var(--font-sans);
+}
+
+@media (prefers-color-scheme: dark) {
+  body {
+    background-color: var(--color-noche-950);
+    color: var(--color-noche-100);
+  }
 }
 
 h1,
@@ -99,12 +128,21 @@ h3 {
    ============================================================================= */
 @layer components {
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5
+    /*
+     * py-3 (12px) + la altura de línea de text-sm alcanza los 44px que pide
+     * WCAG 2.5.5 / la Guía de Interfaz Humana de Apple para un objetivo
+     * táctil. Antes eran 10px de relleno -unos 40px de alto-: se medía bien
+     * en la pantalla pero por debajo del mínimo para un pulgar en un
+     * autobús. `.btn-lg` ya cumplía de sobra; el que quedaba corto era este.
+     */
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-5 py-3
            text-sm font-bold transition-colors duration-150
            disabled:cursor-not-allowed disabled:opacity-55;
   }
   .btn-sm {
-    @apply px-4 py-2 text-[13.5px];
+    /* Mismo razonamiento que `.btn`: el botón de la barra fija -el único
+       que usa este tamaño- se toca en cada scroll, en todos los anchos. */
+    @apply min-h-11 px-4 py-2.5 text-[13.5px];
   }
   .btn-lg {
     @apply px-[26px] py-3.5 text-base;
@@ -118,28 +156,55 @@ h3 {
    * cada variante.
    */
   .btn-accion {
+    /* Fondo y texto fijos en los dos temas a propósito: es un color de
+       acento con su propio contraste ya verificado (6.7:1), no una
+       superficie de página que deba oscurecerse. */
     @apply bg-accion-600 text-neutro-900 hover:bg-accion-700 active:bg-accion-700;
   }
   .btn-secundario {
     @apply border border-marca-700 bg-white text-marca-700
-           hover:bg-marca-50 active:bg-marca-100;
+           hover:bg-marca-50 active:bg-marca-100
+           dark:bg-noche-900 dark:text-marca-300 dark:hover:bg-noche-900/70;
   }
 
   .campo {
-    @apply w-full rounded-campo border border-neutro-300 bg-white px-3.5 py-2.5
-           text-[15px] text-neutro-900 placeholder:text-neutro-400
+    /*
+     * El borde subió de neutro-300 a neutro-500: contra un fondo blanco,
+     * neutro-300 mide 1.37:1 -muy por debajo del 3:1 que pide WCAG 1.4.11
+     * para el borde de un campo, que es su única pista visual de dónde
+     * empieza y termina-. neutro-500 llega a 4.6:1. Es más oscuro que el de
+     * la app real, que comparte el mismo defecto sin corregir todavía; se
+     * avisó aparte para que se revise ahí también.
+     *
+     * El texto es 16px, no 15px: por debajo de 16px, Safari de iOS hace zoom
+     * automático al enfocar el campo -un salto de la página que en un
+     * formulario de una sola pantalla se siente como un error del sitio.
+     */
+    @apply w-full rounded-campo border border-neutro-500 bg-white px-3.5 py-3
+           text-base text-neutro-900 placeholder:text-neutro-400
            transition-colors focus:border-marca-600 focus:outline-none
-           focus:ring-2 focus:ring-marca-300/60;
+           focus:ring-2 focus:ring-marca-300/60
+           dark:border-noche-700 dark:bg-noche-900 dark:text-noche-100
+           dark:placeholder:text-noche-400 dark:focus:border-marca-300;
   }
   .campo[aria-invalid="true"] {
-    @apply border-alerta-600 focus:border-alerta-600 focus:ring-alerta-500/40;
+    @apply border-alerta-600 focus:border-alerta-600 focus:ring-alerta-500/40
+           dark:border-alerta-500 dark:focus:border-alerta-500;
   }
   .etiqueta {
-    @apply mb-1.5 block text-sm font-bold text-neutro-700;
+    @apply mb-1.5 block text-sm font-bold text-neutro-700 dark:text-noche-100;
   }
 
   .aviso-error {
+    /*
+     * En modo oscuro no es la misma tarjeta rosa aclarada: sobre un fondo
+     * oscuro leería como un error de renderizado, un rectángulo claro fuera
+     * de lugar. El rojo se oscurece en vez de aclararse, y el texto pasa a
+     * un rosa que sí se lee sobre ese fondo (8.9:1) -- verificado, no es el
+     * mismo alerta-700 de claro, que ahí mediría 2:1.
+     */
     @apply flex items-start gap-3 rounded-campo border border-alerta-600/30
-           bg-alerta-50 px-4 py-3 text-sm text-alerta-700;
+           bg-alerta-50 px-4 py-3 text-sm text-alerta-700
+           dark:border-[#5c2129] dark:bg-[#2a0f13] dark:text-[#f5a0a6];
   }
 }

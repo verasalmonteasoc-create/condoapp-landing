@@ -4,6 +4,13 @@ import { SITIO } from "@/contenido/sitio";
  * Copiado de `frontend/components/Marca.tsx` de la app -- mismo símbolo,
  * mismas proporciones. Quien vea esta portada y luego entre a la app no
  * debe notar un cambio de identidad a mitad de camino.
+ *
+ * Única diferencia a propósito: el texto de la variante "oscuro" lleva
+ * `dark:` -- la app todavía no tiene modo oscuro, así que no había nada que
+ * copiar de ahí. Sin esto, "CondoApp" se escribía en marca-700 (un azul
+ * pensado para fondo blanco) directo sobre el fondo oscuro de esta portada:
+ * 2.4:1 de contraste, por debajo del 4.5:1 que exige WCAG AA -prácticamente
+ * ilegible-. Si la app suma modo oscuro algún día, son los mismos tokens.
  */
 type PropsMarca = {
   variante?: "claro" | "oscuro";
@@ -39,13 +46,15 @@ export function Marca({ variante = "oscuro", soloSimbolo = false, className = ""
       {!soloSimbolo && (
         <span className="flex flex-col leading-none">
           <span
-            className={`text-[17px] font-black tracking-tight ${claro ? "text-white" : "text-marca-700"}`}
+            className={`text-[17px] font-black tracking-tight ${
+              claro ? "text-white" : "text-marca-700 dark:text-marca-300"
+            }`}
           >
             {SITIO.nombre}
           </span>
           <span
             className={`mt-1 text-[10px] font-bold uppercase tracking-[0.13em] ${
-              claro ? "text-marca-200" : "text-neutro-500"
+              claro ? "text-marca-200" : "text-neutro-500 dark:text-noche-400"
             }`}
           >
             {SITIO.descriptor}
