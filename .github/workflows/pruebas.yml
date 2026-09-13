@@ -7,7 +7,7 @@
 # contra la Function real (Playwright + `wrangler pages dev`, sin cuenta ni
 # credenciales de Cloudflare -ver playwright.config.ts). Lo que NO hace este
 # flujo es desplegar: Cloudflare Pages ya construye y publica solo en cada
-# push a `main` en cuanto el repositorio quede conectado en su panel -ver
+# push a `master` en cuanto el repositorio quede conectado en su panel -ver
 # "Cómo se despliega" en README.md-. Duplicar ese paso aquí con
 # `wrangler pages deploy` obligaría a mantener un token de Cloudflare en dos
 # lugares a la vez y arriesgaría un despliegue a mitad de otro.
@@ -16,7 +16,7 @@ name: Pruebas
 
 on:
   push:
-    branches: [main]
+    branches: [master]
   pull_request:
   workflow_dispatch:
 
