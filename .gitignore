@@ -8,3 +8,9 @@ out/
 .env.local
 .DS_Store
 coverage/
+
+# `next dev` (16+) los regenera solo, con un aviso generico de Next -- no
+# instrucciones de este proyecto. No se confirman: este repo ya usa README.md
+# para eso, y un CLAUDE.md aqui chocaria con el de verdad en ../condoapp.
+AGENTS.md
+CLAUDE.md
